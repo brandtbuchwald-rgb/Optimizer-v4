@@ -133,20 +133,19 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
   const sum = document.getElementById('summary');
   sum.innerHTML = `
     <h3>Optimal Combo</h3>
-    <div>${cls} (${focus}) | Weapon: ${weap}, Gear: ${tier}</div>
+    <div>${cls} (${focus}) | Weapon: ${weap} | Tier: ${tier}</div>
     <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
     <ul>
       <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
-      <li>Rune ${best.rune}%</li>
-      <li>Pet ${best.petName} (${fmtPct(best.petAS)})</li>
-      ${best.quick>0 ? `<li>Quicken Lv ${best.quick} (${fmtPct(best.quick*0.01)}) <b>(last resort)</b></li>` : ''}
+      <li>Rune ${best.rune*1}%</li>
+      <li>Pet ${best.petName} (AS ${fmtPct(best.petAS)}, Crit ${fmtPct(best.critPet||0)})</li>
+      ${best.quick>0 ? `<li>Quicken Lv ${best.quick} (${fmtPct(best.quick*0.01)})</li>` : ""}
     </ul>
     <div>= ${fmtPct(best.totalAS)} total → Cap reached at ${fmtSec(target)}</div>
     <div>Waste: ${fmtPct(best.waste)}</div>
     <hr/>
   `;
 }
-
 // ---- Slots ----
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
