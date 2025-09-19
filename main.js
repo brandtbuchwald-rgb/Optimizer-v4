@@ -120,13 +120,23 @@ function run(){
   }
 
   if (!best){
-    document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
-    return;
-  }
-
-  renderCombo(cls,focus,weap,tier,base,target,best);
-  renderSlots(cls,focus,tier,best);
+  document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
+  document.getElementById('slots').innerHTML = '';
+  document.getElementById('totals').innerHTML = '';
+  return;
 }
+
+// --- Summary block ---
+document.getElementById('summary').innerHTML = `
+  <b>Optimal Combo</b><br>
+  ${cls} (${focus}) | Tier: ${tier}<br>
+  Base Interval: ${base.toFixed(3)}s → Target: ${target.toFixed(3)}s<br>
+  Gear Lines = ${best.gearLines}, Rune = ${best.rune}, Pet = ${best.petName}, Quicken = ${best.quick}<br>
+  Waste: ${(best.waste*100).toFixed(1)}%
+`;
+
+renderSlots(cls,focus,tier,best);
+renderTotals(best);
 
 // ---- Combo Summary ----
 function renderCombo(cls,focus,weap,tier,base,target,best){
