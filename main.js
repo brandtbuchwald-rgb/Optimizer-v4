@@ -17,29 +17,6 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ---- Rules ----
-const rules = {
-  slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
-  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
-  baseInterval: {
-    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
-  },
-  lineValues: {
-    Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-    Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-    Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
-    Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
-  },
-  pets: { None:0, B:0.08, A:0.10, S:0.12 }
-};
-
-function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
-function fmtSec(s){ return s.toFixed(3) + 's'; }
-
-// --- Core ---
 function run(){
   const cls    = els.cls.value;
   const focus  = els.focus.value;
@@ -54,38 +31,52 @@ function run(){
   const base = rules.baseInterval[tier][cls];
   const tierVals = rules.lineValues[tier];
 
-  // passive buffs (don’t show in totals)
   const passiveAS = statColor + charMod + guild + secret;
-
-  // --- Brute force search for best combo ---
   let best = null;
+
   const petOptions = Object.entries(rules.pets);
 
+  // Pass 1: try WITHOUT quicken
   for (let rune=0; rune<=6; rune++){
-  for (const [petName,petAS] of petOptions){
-    // First pass: ignore quicken completely
-    let usedQuicken = false;
-    for (let gearLines=0; gearLines<=8; gearLines++){
-      const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
-      const finalInterval = base * (1 - totalAS) * fury;
-      if (finalInterval <= target){
-        best = {gearLines,rune,petName,petAS,totalAS,finalInterval,waste, ...};
-      }
-    }
-    // If no solution, THEN try adding quicken
-    if (!best){
-      for (let quick=1; quick<=2; quick++){ // cap quicken at 2
-        for (let gearLines=0; gearLines<=8; gearLines++){
-          const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS + quick*0.01;
-          const finalInterval = base * (1 - totalAS) * fury;
-          if (finalInterval <= target){
-            best = {gearLines,rune,petName,petAS,quick,totalAS,finalInterval,waste, ...};
+    for (const [petName,petAS] of petOptions){
+      for (let gearLines=0; gearLines<=8; gearLines++){
+        const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
+        const finalInterval = base * (1 - totalAS) * fury;
+        if (finalInterval <= target){
+          const requiredAS = 1 - (target / base);
+          const waste = totalAS - requiredAS;
+          if (!best || gearLines < best.gearLines || 
+             (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
+            best = {gearLines,rune,petName,petAS,quick:0,totalAS,finalInterval,waste,tierVals,
+                    critLines:0,evaLines:0,drLines:0};
           }
         }
       }
     }
   }
-}
+
+  // Pass 2: allow quicken (only if nothing worked)
+  if (!best){
+    for (let rune=0; rune<=6; rune++){
+      for (const [petName,petAS] of petOptions){
+        for (let quick=1; quick<=2; quick++){ // cap quicken at 2
+          for (let gearLines=0; gearLines<=8; gearLines++){
+            const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS + quick*0.01;
+            const finalInterval = base * (1 - totalAS) * fury;
+            if (finalInterval <= target){
+              const requiredAS = 1 - (target / base);
+              const waste = totalAS - requiredAS;
+              if (!best || gearLines < best.gearLines ||
+                 (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
+                best = {gearLines,rune,petName,petAS,quick,totalAS,finalInterval,waste,tierVals,
+                        critLines:0,evaLines:0,drLines:0};
+              }
+            }
+          }
+        }
+      }
+    }
+  }
 
   if (!best){
     document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
@@ -95,7 +86,6 @@ function run(){
   renderCombo(cls,focus,tier,base,target,best);
   renderSlots(cls,focus,tier,best);
 }
-
 // --- Render combo summary ---
 function renderCombo(cls,focus,tier,base,target,best){
   const sum = document.getElementById('summary');
