@@ -53,10 +53,12 @@ function run(rules){
   const passiveAS = statColor + charMod + guild + secret + runeAS + petAS;
   const needFromEquip = Math.max(0, needAS - passiveAS);
 
+    // Pull line values from rules (gear tier specific)
+  const tierVals = rules.lineValues[weap] || {};
   const line = {
-    AS:  +els.line_atkspd.value || 0.08,
-    CR:  +els.line_crit.value   || 0.16,
-    EV:  +els.line_eva.value    || 0.12,
+    AS: tierVals.AS || +els.line_atkspd.value || 0.08,
+    CR: tierVals.CR || +els.line_crit.value   || 0.16,
+    EV: tierVals.EV || +els.line_eva.value    || 0.12,
     ATK: +els.line_atk.value    || 0.18,
     CD:  +els.line_cd.value     || 40,
     MD:  +els.line_md.value     || 0.18,
@@ -64,7 +66,6 @@ function run(rules){
     DF:  +els.line_def.value    || 0.20,
     DR:  +els.line_dr.value     || 0.12
   };
-
   const slots = rules.slots.slice();
   const layout = {};
   for (const s of slots) layout[s] = [];
