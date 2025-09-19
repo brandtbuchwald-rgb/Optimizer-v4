@@ -253,7 +253,11 @@ function renderTotals(best, tierVals) {
   const hpPct = best.hpLines * tierVals.HP;
   const defPct = best.dfLines * tierVals.DF;
   // --- DR% (gear + rune, cap 100%) ---
-const drFromGearRune = Math.min(best.drLines * tierVals.DR + best.drRune, rules.caps.drFromGearRune);
+// --- DR% (gear + rune, cap 100%) ---
+const drFromGearRune = Math.min(
+  best.drLines * tierVals.DR + (best.drRune || 0),
+  rules.caps.drFromGearRune
+);
 
   // --- Build totals display ---
   const html = `
@@ -266,7 +270,7 @@ const drFromGearRune = Math.min(best.drLines * tierVals.DR + best.drRune, rules.
     <div>Monster DMG = ${(monsterDmg*100).toFixed(1)}%</div>
     <div>HP% = ${(hpPct*100).toFixed(1)}%</div>
     <div>DEF% = ${(defPct*100).toFixed(1)}%</div>
-    <div>DR% = ${(drPct*100).toFixed(1)}%</div>
+    <div>DR% = ${(drFromGearRune*100).toFixed(1)}%</div>
   `;
 
   box.innerHTML = html;
