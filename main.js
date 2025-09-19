@@ -12,13 +12,13 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ---- Rules ----
- const rules = {
+const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
   caps: {
     critFromGearRune: 0.50,
     evaFromGearRune: 0.40,
     drFromGearRune: 1.00,
-    critTotal: 1.00           // for “crit + pet” cap
+    critTotal: 1.00
   },
   baseInterval: {
     Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
@@ -39,7 +39,8 @@ window.addEventListener('DOMContentLoaded', () => {
     A:{AS:0.09, CR:0.09},
     S:{AS:0.12, CR:0.12}
   }
-}; // <-- this closing brace+semicolon was missing
+};
+
 // ---- Helpers ----
 function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
 function fmtSec(s){ return s.toFixed(3) + 's'; }
@@ -48,8 +49,8 @@ function fmtSec(s){ return s.toFixed(3) + 's'; }
 function run(){
   const cls    = els.cls.value;
   const focus  = els.focus.value;
-  const weap   = els.weap.value;       // weapon type (Original / Primal / Chaos / Abyss / PvP/Boss)
-  const tier   = els.gearTier.value;   // gear tier (Primal / Original / Chaos / Abyss)
+  const weap   = els.weap.value;
+  const tier   = els.gearTier.value;
   const statColor = +els.col.value;
   const charMod   = +els.char.value;
   const guild     = (+els.guild.value||0)/100;
@@ -57,65 +58,55 @@ function run(){
   const target    = +els.target.value || 0.25;
   const fury      = (els.fury.checked && cls === 'Berserker') ? 1.25 : 1.0;
 
-  const base = rules.baseInterval[weap][cls];   // weapon sets base interval
-  const tierVals = rules.lineValues[tier];      // gear tier sets line values
+  const base = rules.baseInterval[weap][cls];
+  const tierVals = rules.lineValues[tier];
   const passiveAS = statColor + charMod + guild + secret;
 
   let best = null;
   const petOptions = Object.entries(rules.pets);
 
-  // 1) Try WITHOUT quicken
+  // 1) Without quicken
   for (let rune=0; rune<=6; rune++){
     for (const [petName, petStats] of petOptions){
       const petAS = petStats.AS;
       const petCR = petStats.CR;
-
       for (let gearLines=0; gearLines<=8; gearLines++){
         const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
         const finalInterval = base * (1 - totalAS) * fury;
-
         if (finalInterval <= target){
           const requiredAS = 1 - (target / base);
           const waste = totalAS - requiredAS;
-
           if (!best || gearLines < best.gearLines ||
              (gearLines === best.gearLines && waste < best.waste - 1e-9)){
-            best = {
-              gearLines,rune,quick:0,
+            best = {gearLines,rune,quick:0,
               petName,petAS,critPet:petCR,
               totalAS,finalInterval,waste,
-              tierVals,critLines:0,evaLines:0,drLines:0
-            };
+              tierVals,critLines:0,evaLines:0,drLines:0};
           }
         }
       }
     }
   }
 
-  // 2) If no valid combo, allow quicken (last resort)
+  // 2) With quicken (Lv1–2)
   if (!best){
     for (let rune=0; rune<=6; rune++){
-      for (let quick=1; quick<=2; quick++){ // only Lv1-2
+      for (let quick=1; quick<=2; quick++){
         for (const [petName, petStats] of petOptions){
           const petAS = petStats.AS;
           const petCR = petStats.CR;
-
           for (let gearLines=0; gearLines<=8; gearLines++){
             const totalAS = passiveAS + rune*0.01 + petAS + quick*0.01 + gearLines*tierVals.AS;
             const finalInterval = base * (1 - totalAS) * fury;
-
             if (finalInterval <= target){
               const requiredAS = 1 - (target / base);
               const waste = totalAS - requiredAS;
-
               if (!best || gearLines < best.gearLines ||
                  (gearLines === best.gearLines && waste < best.waste - 1e-9)){
-                best = {
-                  gearLines,rune,quick,
+                best = {gearLines,rune,quick,
                   petName,petAS,critPet:petCR,
                   totalAS,finalInterval,waste,
-                  tierVals,critLines:0,evaLines:0,drLines:0
-                };
+                  tierVals,critLines:0,evaLines:0,drLines:0};
               }
             }
           }
@@ -125,30 +116,23 @@ function run(){
   }
 
   if (!best){
-  document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
-  document.getElementById('slots').innerHTML = '';
-  document.getElementById('totals').innerHTML = '';
-  return;
+    document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
+    document.getElementById('slots').innerHTML = '';
+    document.getElementById('totals').innerHTML = '';
+    return;
+  }
+
+  renderCombo(cls, focus, weap, tier, base, target, best);
+  renderSlots(cls, focus, tier, best);
+  renderTotals(best);
 }
-
-// --- Summary block ---
-document.getElementById('summary').innerHTML = `
-  <b>Optimal Combo</b><br>
-  ${cls} (${focus}) | Tier: ${tier}<br>
-  Base Interval: ${base.toFixed(3)}s → Target: ${target.toFixed(3)}s<br>
-  Gear Lines = ${best.gearLines}, Rune = ${best.rune}, Pet = ${best.petName}, Quicken = ${best.quick}<br>
-  Waste: ${(best.waste*100).toFixed(1)}%
-`;
-
-renderSlots(cls,focus,tier,best);
-renderTotals(best);
 
 // ---- Combo Summary ----
 function renderCombo(cls,focus,weap,tier,base,target,best){
   const sum = document.getElementById('summary');
   sum.innerHTML = `
     <h3>Optimal Combo</h3>
-    <div>${cls} (${focus}) | Weapon: ${weap} | Tier: ${tier}</div>
+    <div>${cls} (${focus}) | Weapon: ${weap} | Gear: ${tier}</div>
     <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
     <ul>
       <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
