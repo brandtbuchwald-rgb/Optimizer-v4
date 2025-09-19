@@ -14,10 +14,28 @@ window.addEventListener('DOMContentLoaded', async () => {
   ].forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
 
-  const rules = await (await fetch('assets/gearRules.json')).json();
-  els.runBtn.addEventListener('click', () => run(rules));
-  run(rules);
-});
+  const rules = {
+  slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
+  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40 },
+  priority: {
+    DPS: ["ATK SPD","Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"],
+    Tank: ["ATK SPD","Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"]
+  },
+  baseInterval: {
+    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
+  },
+  lineValues: {
+    Original:{AS:0.12,CR:0.14,EV:0.10},
+    Primal:{AS:0.12,CR:0.14,EV:0.10},
+    Chaos:{AS:0.16,CR:0.16,EV:0.12},
+    Abyss:{AS:0.16,CR:0.16,EV:0.12},
+    "PvP/Boss":{AS:0.12,CR:0.14,EV:0.10}
+  }
+};
 
 function pctNum(el){ return Math.min(Math.max(+el.value || 0, -1), 5); }
 function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
