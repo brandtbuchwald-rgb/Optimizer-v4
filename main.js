@@ -1,8 +1,9 @@
 // ===========================
-// Rediscover Optimizer v3
+// Rediscover Optimizer v4
 // ===========================
-// Adds Chaos/Abyss purple 5th line logic
-// Allows user to input percents like "5" instead of "0.05"
+// Chaos/Abyss purple 5th lines
+// Buffs entered as %
+// Totals section with clean breakdown
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
@@ -170,8 +171,32 @@ function run(rules){
   const totalAS = Math.min(0.95, passiveAS + asAccum); // clamp
   const finalInterval = base * (1 - quicken) * fury * (1 - totalAS);
 
+  // --- Totals calculation ---
+  const totals = {AS:0, CR:0, EV:0, ATK:0, CD:0, MD:0, HP:0, DF:0, DR:0, Boss:0};
+  for (const [slot, stats] of Object.entries(layout)){
+    for (const s of stats){
+      if (s === "ATK SPD") totals.AS += line.AS;
+      if (s === "Crit Chance") totals.CR += line.CR;
+      if (s === "Evasion") totals.EV += line.EV;
+      if (s.startsWith("ATK%")) totals.ATK += line.ATK;
+      if (s.startsWith("Crit DMG")) totals.CD += (s.includes("(Purple)") ? 80 : line.CD);
+      if (s === "Monster DMG") totals.MD += line.MD;
+      if (s.startsWith("HP%")) totals.HP += line.HP;
+      if (s === "DEF%") totals.DF += line.DF;
+      if (s === "DR%") totals.DR += line.DR;
+      if (s.startsWith("Boss DMG")) totals.Boss += line.MD;
+    }
+  }
+
+  // Equipment-only stat views
+  const equipRunePetAS = asAccum + runeAS + petAS;
+  const critEquipRune = Math.min(totals.CR + runeAS, rules.caps.critFromGearRune);
+  const critWithPet = critEquipRune + petAS;
+  const evaEquipRune = Math.min(totals.EV + runeAS, rules.caps.evaFromGearRune);
+
   renderSummary({cls, focus, weap, base, target, totalAS, needAS, finalInterval});
   renderSlots(layout);
+  renderTotals({equipRunePetAS, critEquipRune, critWithPet, evaEquipRune, totals});
 }
 
 function allocateWeapon(layout, focus){
@@ -211,4 +236,24 @@ function renderSlots(layout){
       stats.map(s => `<span class="pill">${s}</span>`).join('');
     box.appendChild(div);
   }
+}
+
+function renderTotals(d){
+  const box = document.getElementById('slots');
+  const div = document.createElement('div');
+  div.className = 'slot';
+  div.innerHTML = `
+    <h3>Totals</h3>
+    <div>Attack Speed (equip+rune+pet): ${fmtPct(d.equipRunePetAS)}</div>
+    <div>Crit Chance (equip+rune, capped 50%): ${fmtPct(d.critEquipRune)} (with pet: ${fmtPct(d.critWithPet)})</div>
+    <div>Evasion (equip+rune, capped 40%): ${fmtPct(d.evaEquipRune)}</div>
+    <div>Attack%: ${fmtPct(d.totals.ATK)}</div>
+    <div>Crit DMG: ${d.totals.CD}</div>
+    <div>Monster DMG: ${fmtPct(d.totals.MD)}</div>
+    <div>HP%: ${fmtPct(d.totals.HP)}</div>
+    <div>DEF%: ${fmtPct(d.totals.DF)}</div>
+    <div>DR%: ${fmtPct(d.totals.DR)}</div>
+    <div>Boss DMG: ${fmtPct(d.totals.Boss)}</div>
+  `;
+  box.appendChild(div);
 }
