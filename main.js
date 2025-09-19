@@ -252,7 +252,8 @@ function renderTotals(best, tierVals) {
   const monsterDmg = best.mdLines * tierVals.MD;
   const hpPct = best.hpLines * tierVals.HP;
   const defPct = best.dfLines * tierVals.DF;
-  const drPct = best.drLines * tierVals.DR;
+  // --- DR% (gear + rune, cap 100%) ---
+const drFromGearRune = Math.min(best.drLines * tierVals.DR + best.drRune, rules.caps.drFromGearRune);
 
   // --- Build totals display ---
   const html = `
