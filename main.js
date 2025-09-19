@@ -3,6 +3,10 @@
 // Rediscover Optimizer v4 (Clean)
 // ==========================
 
+// ==========================
+// Rediscover Optimizer v4 (Clean)
+// ==========================
+
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
   const q = id => document.getElementById(id);
@@ -15,26 +19,20 @@ window.addEventListener('DOMContentLoaded', () => {
 // ---- Rules ----
 const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
-  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40 },
-  priority: {
-    DPS: ["ATK SPD","Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"],
-    Tank: ["ATK SPD","Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"]
+  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
+  baseInterval: {
+    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
   },
-  // in rules.baseInterval
-baseInterval: {
-  Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-  Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-  Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-  Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2}
-},
-
-// in rules.lineValues
-lineValues: {
-  Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-  Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-  Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
-  Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
-},
+  lineValues: {
+    Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
+    Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
+    Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
+    Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
+  },
   pets: { None:0, B:0.08, A:0.10, S:0.12 }
 };
 
@@ -59,57 +57,36 @@ function run(){
   // passive buffs (don’t show in totals)
   const passiveAS = statColor + charMod + guild + secret;
 
-  // --- Brute force search for best let best = null;
-let bestValid = null;
-let closest = null;
-const petOptions = Object.entries(rules.pets);
+  // --- Brute force search for best combo ---
+  let best = null;
+  const petOptions = Object.entries(rules.pets);
 
-for (let rune=0; rune<=6; rune++){
-  for (let quick=0; quick<=2; quick++){   // Quicken capped at 2
-    for (const [petName,petAS] of petOptions){
-      for (let gearLines=0; gearLines<=8; gearLines++){
-        const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
-        const finalInterval = base * (1 - totalAS) * fury;
+  for (let rune=0; rune<=6; rune++){
+    for (let quick=0; quick<=2; quick++){  // limit quicken to lvl 2
+      for (const [petName,petAS] of petOptions){
+        for (let gearLines=0; gearLines<=8; gearLines++){
+          const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
+          const finalInterval = base * (1 - totalAS) * fury;
+          if (finalInterval <= target){
+            const requiredAS = 1 - (target / base);
+            const waste = totalAS - requiredAS;
 
-        const requiredAS = 1 - (target / base);
-        const waste = totalAS - requiredAS;
-
-        // Track closest even if it doesn’t reach target
-        if (!closest || finalInterval < closest.finalInterval) {
-          closest = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
-        }
-
-        // Only accept valid combos that meet or beat target
-        if (finalInterval <= target){
-          if (!bestValid ||
-              gearLines < bestValid.gearLines ||
-              (gearLines === bestValid.gearLines && waste < bestValid.waste - 1e-9)) {
-            bestValid = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
+            if (!best ||
+                gearLines < best.gearLines ||
+                (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
+              best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
+            }
           }
         }
       }
     }
   }
-}
 
-// Decide what to render
-if (bestValid){
-  renderCombo(cls,focus,tier,base,target,bestValid);
-  renderSlots(cls,focus,tier,bestValid);
-} else {
-  document.getElementById('summary').innerHTML =
-    `<h3>Closest Possible (Quicken ≤2)</h3>
-     <div>${cls} (${focus}) | Tier: ${tier}</div>
-     <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
-     <div>Best Achieved: ${fmtSec(closest.finalInterval)}</div>
-     <ul>
-       <li>${closest.gearLines} gear line(s) ATK SPD @ ${fmtPct(closest.tierVals.AS)}</li>
-       <li>Rune ${closest.rune}%</li>
-       <li>Pet ${closest.petName} (${fmtPct(closest.petAS)})</li>
-       <li>Quicken Lv ${closest.quick} (${fmtPct(closest.quick*0.01)})</li>
-     </ul>
-     <div>Total AS = ${fmtPct(closest.totalAS)}</div>`;
-}
+  if (!best){
+    document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
+    return;
+  }
+
   renderCombo(cls,focus,tier,base,target,best);
   renderSlots(cls,focus,tier,best);
 }
@@ -125,7 +102,7 @@ function renderCombo(cls,focus,tier,base,target,best){
       <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
       <li>Rune ${best.rune}%</li>
       <li>Pet ${best.petName} (${fmtPct(best.petAS)})</li>
-     <li>Quicken Lv ${Math.round(best.quick)} (${fmtPct(best.quick*0.01)})</li>
+      <li>Quicken Lv ${best.quick} (${fmtPct(best.quick*0.01)})</li>
     </ul>
     <div>= ${fmtPct(best.totalAS)} total → Cap reached at ${fmtSec(target)}</div>
     <div>Waste: ${fmtPct(best.waste)}</div>
@@ -133,7 +110,6 @@ function renderCombo(cls,focus,tier,base,target,best){
   `;
 }
 
-// --- Render slot-by-slot ---
 // --- Render slot-by-slot ---
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
@@ -143,81 +119,64 @@ function renderSlots(cls,focus,tier,best){
   const layout = {};
   for (const s of rules.slots) layout[s] = [];
 
-  // ---- WEAPON RULES ----
-if (focus === "DPS") {
-  if (tier === "Primal") {
-    layout['Weapon'] = ["Cast Demon Lord", "ATK%", "Crit DMG"];
+  // Weapon rules
+  if (focus === "DPS"){
+    layout['Weapon'] = (tier === "Primal")
+      ? ["Cast Demon Lord","ATK%","Crit DMG"]
+      : ["Cast Demon Lord","ATK%","Crit DMG","Monster DMG"];
   } else {
-    layout['Weapon'] = ["Cast Demon Lord", "ATK%", "Crit DMG", "Monster DMG"];
+    layout['Weapon'] = (tier === "Primal")
+      ? ["Cast Evasion","HP%","DEF%"]
+      : ["Cast Evasion","HP%","DEF%","DR%"];
   }
-} else { // Tank
-  if (tier === "Primal") {
-    layout['Weapon'] = ["Cast Evasion", "HP%", "DEF%"];
-  } else {
-    layout['Weapon'] = ["Cast Evasion", "HP%", "DEF%", "DR%"];
+
+  // Assign ATK SPD
+  let asLeft = best.gearLines;
+  for (const s of rules.slots){
+    if (s!=="Weapon" && asLeft>0){
+      layout[s].push("ATK SPD");
+      asLeft--;
+    }
   }
-}
 
-// ---- Assign ATK SPD lines ----
-let asLeft = best.gearLines;
-for (const s of rules.slots){
-  if (s !== "Weapon" && asLeft > 0){
-    layout[s].push("ATK SPD");
-    asLeft--;
+  // Crit, Evasion, DR filling (respect caps)
+  let critAccum=0, evaAccum=0, drAccum=0;
+  for (const s of rules.slots){
+    if (s==="Weapon") continue;
+
+    if (!layout[s].includes("ATK SPD") &&
+        (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
+      layout[s].push("Crit Chance");
+      critAccum += tierVals.CR;
+    }
+    if (!layout[s].includes("ATK SPD") &&
+        !layout[s].includes("Crit Chance") &&
+        (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
+      layout[s].push("Evasion");
+      evaAccum += tierVals.EV;
+    }
+    if ((drAccum + tierVals.DR) <= rules.caps.drFromGearRune &&
+        layout[s].length<4){
+      layout[s].push("DR%");
+      drAccum += tierVals.DR;
+    }
   }
-}
 
-// ---- Crit Chance until cap ----
-let critAccum = 0;
-for (const s of rules.slots){
-  if (s !== "Weapon" &&
-      !layout[s].includes("ATK SPD") &&
-      (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
-    layout[s].push("Crit Chance");
-    critAccum += tierVals.CR;
-  }
-}
-
-// ---- Evasion until cap ----
-let evaAccum = 0;
-for (const s of rules.slots){
-  if (s !== "Weapon" &&
-      !layout[s].includes("ATK SPD") &&
-      !layout[s].includes("Crit Chance") &&
-      (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
-    layout[s].push("Evasion");
-    evaAccum += tierVals.EV;
-  }
-}
-
-// ---- DR% until 100% ----
-let drAccum = 0;
-for (const s of rules.slots){
-  if (s !== "Weapon" &&
-      (drAccum + tierVals.DR) <= rules.caps.drFromGearRune &&
-      layout[s].length < 4){
-    layout[s].push("DR%");
-    drAccum += tierVals.DR;
-  }
-}
-
-// ---- Fill remaining slots ----
-const filler = (focus === "DPS")
-  ? ["ATK%","Crit DMG","Monster DMG"]
-  : ["DR%","HP%","DEF%","ATK%","Crit Chance"];
-
-for (const s of rules.slots){
-  while (layout[s].length < 4){
-    for (const f of filler){
-      if (layout[s].length < 4 && !layout[s].includes(f)){
-        layout[s].push(f);
+  // Fill with focus-specific priorities
+  const filler = (focus==="DPS")
+    ? ["ATK%","Crit DMG","Monster DMG"]
+    : ["DR%","HP%","DEF%","ATK%","Crit Chance"];
+  for (const s of rules.slots){
+    while(layout[s].length<4){
+      for (const f of filler){
+        if (layout[s].length<4 && !layout[s].includes(f)){
+          layout[s].push(f);
+        }
       }
     }
   }
-}
-  // At the end of renderSlots()
-renderTotals(best, tierVals);
-  // ---- Render output ----
+
+  // Output
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
@@ -225,73 +184,25 @@ renderTotals(best, tierVals);
     box.appendChild(div);
   }
 
-  const drTotal = Math.min(best.drLines * tierVals.DR, rules.caps.drFromGearRune);
+  renderTotals(best,tierVals);
 }
-function renderTotals(best, tierVals) {
-  const box = document.getElementById('totals');
-  box.innerHTML = '';
 
-  // --- Attack Speed ---
-  const asGear   = best.gearLines * tierVals.AS;
-  const asRune   = best.rune * 0.01;
-  const asPet    = best.petAS;
-  const asQuick  = best.quick * 0.01;
-  let totalAS    = asGear + asRune + asPet + asQuick;
+// --- Totals with waste tracking ---
+function renderTotals(best, tierVals){
+  const box=document.getElementById('totals');
+  if(!box) return;
 
-  // cap = how much AS was actually needed
-  const requiredAS = 1 - (best.finalInterval / (rules.baseInterval[best.tier][best.cls]));  
-  let asWaste = 0;
-  if (totalAS > requiredAS) {
-    asWaste = totalAS - requiredAS;
-    totalAS = requiredAS;
-  }
+  const totalAS=best.totalAS;
+  const critFromGearRune=Math.min(best.gearLines*tierVals.CR,rules.caps.critFromGearRune);
+  const evaTotal=Math.min(best.gearLines*tierVals.EV,rules.caps.evaFromGearRune);
+  const drTotal=Math.min(best.gearLines*tierVals.DR,rules.caps.drFromGearRune);
 
-  // --- Crit Chance ---
-  let critFromGearRune = best.critLines * tierVals.CR;
-  let critWaste = 0;
-  if (critFromGearRune > rules.caps.critFromGearRune) {
-    critWaste = critFromGearRune - rules.caps.critFromGearRune;
-    critFromGearRune = rules.caps.critFromGearRune;
-  }
-  const critWithPet = critFromGearRune + (best.critPet || 0);
-
-  // --- Evasion ---
-  let evaTotal = best.evaLines * tierVals.EV;
-  let evaWaste = 0;
-  if (evaTotal > rules.caps.evaFromGearRune) {
-    evaWaste = evaTotal - rules.caps.evaFromGearRune;
-    evaTotal = rules.caps.evaFromGearRune;
-  }
-
-  // --- DR ---
-  let drTotal = best.drLines * tierVals.DR;
-  let drWaste = 0;
-  if (drTotal > rules.caps.drFromGearRune) {
-    drWaste = drTotal - rules.caps.drFromGearRune;
-    drTotal = rules.caps.drFromGearRune;
-  }
-
-  // --- Damage stats ---
-  const atkPct     = best.atkLines * tierVals.ATK;
-  const critDmg    = best.cdLines * tierVals.CD;
-  const monsterDmg = best.mdLines * tierVals.MD;
-  const hpPct      = best.hpLines * tierVals.HP;
-  const defPct     = best.dfLines * tierVals.DF;
-
-  // --- HTML output ---
-  const html = `
+  const html=`
     <h3>Totals</h3>
-    <div>Attack Speed = ${(totalAS*100).toFixed(1)}% ${asWaste > 0 ? `(waste ${(asWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}% (Pet ${(critWithPet*100).toFixed(1)}%) 
-      ${critWaste > 0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>Evasion = ${(evaTotal*100).toFixed(1)}% ${evaWaste > 0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>DR% = ${(drTotal*100).toFixed(1)}% ${drWaste > 0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>Attack% = ${(atkPct*100).toFixed(1)}%</div>
-    <div>Crit DMG = ${critDmg}</div>
-    <div>Monster DMG = ${(monsterDmg*100).toFixed(1)}%</div>
-    <div>HP% = ${(hpPct*100).toFixed(1)}%</div>
-    <div>DEF% = ${(defPct*100).toFixed(1)}%</div>
+    <div>Attack Speed = ${(totalAS*100).toFixed(1)}%</div>
+    <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}%</div>
+    <div>Evasion = ${(evaTotal*100).toFixed(1)}%</div>
+    <div>DR% = ${(drTotal*100).toFixed(1)}%</div>
   `;
-
-  box.innerHTML = html;
+  box.innerHTML=html;
 }
