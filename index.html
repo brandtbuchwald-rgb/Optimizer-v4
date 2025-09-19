@@ -3,16 +3,17 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Rediscover Optimizer v1 (Clean)</title>
+  <title>Rediscover Optimizer v4 (Clean)</title>
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <header>
-    <h1>Rediscover Optimizer v1</h1>
+    <h1>Rediscover Optimizer v4</h1>
     <p>Caps first. Waste nothing. Then stack damage.</p>
   </header>
 
   <section class="grid">
+    <!-- Inputs Card -->
     <div class="card">
       <h2>Inputs</h2>
       <div class="row">
@@ -60,25 +61,29 @@
         </select>
       </div>
       <div class="row">
-  <label>Guild Buff (%)</label>
-  <input id="guild" type="number" min="0" max="5" step="1" value="0">
-  <span class="hint">0–5%</span>
-</div>
-
-<div class="row">
-  <label>Secret Tech (%)</label>
-  <input id="secret" type="number" min="0" max="10" step="1" value="0">
-  <span class="hint">0–10%</span>
-</div>
-
-<label>Gear Tier</label>
-<select id="gearTier">
-  <option value="Primal">Primal (12%)</option>
-  <option value="Original">Original (12%)</option>
-  <option value="Chaos">Chaos (14%)</option>
-  <option value="Abyss">Abyss (16%)</option>
-</select>
-      
+        <label>Guild Buff (%)</label>
+        <input id="guild" type="number" min="0" max="5" step="1" value="0">
+        <span class="hint">0–5%</span>
+      </div>
+      <div class="row">
+        <label>Secret Tech (%)</label>
+        <input id="secret" type="number" min="0" max="10" step="1" value="0">
+        <span class="hint">0–10%</span>
+      </div>
+      <div class="row">
+        <label>Gear Tier</label>
+        <select id="gearTier">
+          <option value="Primal">Primal (12%)</option>
+          <option value="Original">Original (12%)</option>
+          <option value="Chaos">Chaos (14%)</option>
+          <option value="Abyss">Abyss (16%)</option>
+        </select>
+      </div>
+      <div class="row">
+        <label>Target Interval</label>
+        <input id="target" type="number" step="0.01" value="0.25">
+        <span class="hint">seconds per attack</span>
+      </div>
       <div class="row">
         <label>Berserker Fury</label>
         <input id="fury" type="checkbox" />
@@ -89,10 +94,12 @@
       </div>
     </div>
 
+    <!-- Results Card -->
     <div class="card">
       <h2>Result</h2>
       <div id="summary"></div>
       <div id="slots"></div>
+      <div id="totals"></div>
     </div>
   </section>
 
