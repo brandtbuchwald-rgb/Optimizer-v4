@@ -162,3 +162,52 @@ function renderSlots(cls,focus,tier,best){
     box.appendChild(div);
   }
 }
+function renderTotals(best, layout){
+  const box = document.getElementById('slots');
+  const div = document.createElement('div');
+  div.className = 'slot';
+
+  // Count how many lines of each stat were assigned
+  const statCounts = {};
+  for (const stats of Object.values(layout)){
+    for (const s of stats){
+      statCounts[s] = (statCounts[s]||0)+1;
+    }
+  }
+
+  const tierVals = best.tierVals;
+
+  function statLine(name, val, perLine=null, count=null){
+    if (count && perLine){
+      return `<div>${name} = ${fmtPct(val)} (${count} × ${fmtPct(perLine)})</div>`;
+    } else {
+      return `<div>${name} = ${fmtPct(val)}</div>`;
+    }
+  }
+
+  // Totals math
+  const atkSpd = (statCounts['ATK SPD']||0) * tierVals.AS;
+  const crit   = (statCounts['Crit Chance']||0) * tierVals.CR;
+  const eva    = (statCounts['Evasion']||0) * tierVals.EV;
+  const atk    = (statCounts['ATK%']||0) * tierVals.ATK;
+  const cd     = (statCounts['Crit DMG']||0) * tierVals.CD;
+  const md     = (statCounts['Monster DMG']||0) * tierVals.MD;
+  const hp     = (statCounts['HP%']||0) * tierVals.HP;
+  const df     = (statCounts['DEF%']||0) * tierVals.DF;
+  const dr     = (statCounts['DR%']||0) * tierVals.DR;
+
+  div.innerHTML = `
+    <h3>Totals</h3>
+    ${statLine("Attack Speed", atkSpd, tierVals.AS, statCounts['ATK SPD']||0)}
+    ${statLine("Crit Chance", crit, tierVals.CR, statCounts['Crit Chance']||0)}
+    ${statLine("Evasion", eva, tierVals.EV, statCounts['Evasion']||0)}
+    ${statLine("Attack%", atk, tierVals.ATK, statCounts['ATK%']||0)}
+    ${statLine("Crit DMG", cd, tierVals.CD, statCounts['Crit DMG']||0)}
+    ${statLine("Monster DMG", md, tierVals.MD, statCounts['Monster DMG']||0)}
+    ${statLine("HP%", hp, tierVals.HP, statCounts['HP%']||0)}
+    ${statLine("DEF%", df, tierVals.DF, statCounts['DEF%']||0)}
+    ${statLine("DR%", dr, tierVals.DR, statCounts['DR%']||0)}
+  `;
+
+  box.appendChild(div);
+}
