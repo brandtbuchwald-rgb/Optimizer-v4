@@ -60,18 +60,17 @@ function run(){
   // passive buffs (don’t show in totals)
   const passiveAS = statColor + charMod + guild + secret;
 
-  // --- Brute force search for best combo ---
-  let best = null;
+  // --- Brute force search for best let best = null;
 const petOptions = Object.entries(rules.pets);
 
 for (let rune=0; rune<=6; rune++){
-  for (let quick=0; quick<=2; quick++){
+  for (let quick=0; quick<=2; quick++){   // limit Quicken Lv 0–2
     for (const [petName,petAS] of petOptions){
       for (let gearLines=0; gearLines<=8; gearLines++){
         const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
         const finalInterval = base * (1 - totalAS) * fury;
         if (finalInterval <= target){
-          const requiredAS = 1 - (target / base);           // AS needed ignoring fury (fury already applied above)
+          const requiredAS = 1 - (target / base);
           const waste = totalAS - requiredAS;
 
           if (!best ||
@@ -84,11 +83,13 @@ for (let rune=0; rune<=6; rune++){
     }
   }
 }
-  if (!best){
-    document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
-    return;
-  }
 
+// Handle unreachable case
+if (!best){
+  document.getElementById('summary').innerHTML =
+    "<b>No valid combo reaches cap with ≤ Quicken Lv2.</b>";
+  return;
+}
   renderCombo(cls,focus,tier,base,target,best);
   renderSlots(cls,focus,tier,best);
 }
