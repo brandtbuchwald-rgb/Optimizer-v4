@@ -28,7 +28,11 @@ const rules = {
     Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
     Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
   },
-  pets: { None:0, B:0.08, A:0.10, S:0.12 }
+  pets: {
+  None:{AS:0, CR:0},
+  B:{AS:0.08, CR:0.06},
+  A:{AS:0.10, CR:0.09},
+  S:{AS:0.12, CR:0.12}
 };
 
 // ---- Helpers ----
