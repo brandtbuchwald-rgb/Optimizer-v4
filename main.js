@@ -216,6 +216,8 @@ for (const s of rules.slots){
     }
   }
 }
+  // At the end of renderSlots()
+renderTotals(best, tierVals);
   // ---- Render output ----
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
