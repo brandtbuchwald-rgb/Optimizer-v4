@@ -114,28 +114,27 @@ function run(rules){
     if (asAccum >= needFromEquip) break;
   }
 
-  // 3. Crit Chance until 50%
-  let critAccum = 0;
-  for (const s of nonWeaponSlots){
-    if (!layout[s].includes("ATK SPD") && critAccum < rules.caps.critFromGearRune){
-      layout[s].push("Crit Chance");
-      critAccum += line.CR;
-      if (critAccum >= rules.caps.critFromGearRune) break;
-    }
+ // 3. Crit Chance until 50%
+let critAccum = 0;
+for (const s of nonWeaponSlots){
+  if (!layout[s].includes("ATK SPD") && critAccum < rules.caps.critFromGearRune){
+    layout[s].push("Crit Chance");
+    critAccum += line.CR;
+    if (critAccum >= rules.caps.critFromGearRune) break; // stop adding Crit completely
   }
+}
 
-  // 4. Evasion until 40%
-  let evaAccum = 0;
-  for (const s of nonWeaponSlots){
-    if (!layout[s].includes("ATK SPD") &&
-        !layout[s].includes("Crit Chance") &&
-        evaAccum < rules.caps.evaFromGearRune){
-      layout[s].push("Evasion");
-      evaAccum += line.EV;
-      if (evaAccum >= rules.caps.evaFromGearRune) break;
-    }
+// 4. Evasion until 40%
+let evaAccum = 0;
+for (const s of nonWeaponSlots){
+  if (!layout[s].includes("ATK SPD") &&
+      !layout[s].includes("Crit Chance") &&
+      evaAccum < rules.caps.evaFromGearRune){
+    layout[s].push("Evasion");
+    evaAccum += line.EV;
+    if (evaAccum >= rules.caps.evaFromGearRune) break; // stop adding Eva completely
   }
-
+}
   // 5. Fill remaining with DPS/Tank priorities
   const filler = (focus === "DPS")
     ? ["ATK%","Crit DMG","Monster DMG"]
