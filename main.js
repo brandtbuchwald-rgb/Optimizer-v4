@@ -1,7 +1,8 @@
 // ===========================
-// Rediscover Optimizer v2 (fixed)
+// Rediscover Optimizer v3
 // ===========================
-// Slot-by-slot output version
+// Adds Chaos/Abyss purple 5th line logic
+// Allows user to input percents like "5" instead of "0.05"
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
@@ -18,7 +19,7 @@ window.addEventListener('DOMContentLoaded', () => {
   run(rules);
 });
 
-// Hardcoded rules (no fetch needed)
+// Hardcoded rules
 const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
   caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40 },
@@ -42,7 +43,11 @@ const rules = {
   }
 };
 
-function pctNum(el){ return Math.min(Math.max(+el.value || 0, -1), 5); }
+function pctNum(el){
+  // User enters 5 for 5% → convert to 0.05
+  const val = +el.value || 0;
+  return Math.min(Math.max(val/100, -1), 5);
+}
 function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
 function fmtSec(s){ return s.toFixed(3) + 's'; }
 
@@ -144,7 +149,24 @@ function run(rules){
     }
   }
 
-  // 6. Compute totals
+  // 6. Purple 5th line rules for Chaos/Abyss
+  if (weap === "Chaos" || weap === "Abyss"){
+    for (const s of nonWeaponSlots){
+      if (s === "Ring" || s === "Necklace"){
+        layout[s].push("Crit DMG (Purple)");
+      } else if (["Chest","Gloves","Boots"].includes(s)){
+        layout[s].push("ATK% (Purple)");
+      } else if (s === "Helm" || s === "Belt"){
+        if (focus === "DPS"){
+          layout[s].push("Boss DMG (Purple)");
+        } else {
+          layout[s].push("HP% (Purple)");
+        }
+      }
+    }
+  }
+
+  // 7. Compute totals
   const totalAS = Math.min(0.95, passiveAS + asAccum); // clamp
   const finalInterval = base * (1 - quicken) * fury * (1 - totalAS);
 
