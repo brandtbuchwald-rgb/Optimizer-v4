@@ -1,11 +1,11 @@
 {
   "slots": ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
 
-  "caps": {
-    "critFromGearRune": 0.50,
-    "evaFromGearRune": 0.40
-  },
-
+  caps: { 
+  critFromGearRune: 0.50, 
+  evaFromGearRune: 0.40,
+  drFromGearRune: 1.00   // DR absolute cap
+}
   "priority": {
     "DPS": ["ATK SPD","Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"],
     "Tank": ["ATK SPD","Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"]
