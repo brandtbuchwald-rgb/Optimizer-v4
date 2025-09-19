@@ -194,20 +194,20 @@ function renderTotals(best, tierVals) {
 
   // --- Attack Speed ---
   const asGear = best.gearLines * tierVals.AS;
-  const asRune = best.rune * 0.01;      // rune = % per level
+  const asRune = best.rune * 0.01;      
   const asPet  = best.petAS || 0;
   const asQuick = (best.quick || 0) * 0.01;
 
   const asGearRune = asGear + asRune;
   const asFinal = asGear + asRune + asPet + asQuick;
-  const asWaste = Math.max(0, asFinal - (1 - (best.finalInterval / (best.base || 1))));
+  const asWaste = Math.max(0, asGearRune - (1 - (best.finalInterval / (best.base || 1))));
 
   // --- Crit Chance ---
   const critFromGear = best.critLines * tierVals.CR; 
   const critFromRune = best.critRune || 0; 
   const critGearRune = Math.min(critFromGear + critFromRune, rules.caps.critFromGearRune);
-  const critWithPet  = critGearRune + (best.critPet || 0);
   const critWaste    = (critFromGear + critFromRune) - rules.caps.critFromGearRune;
+  const critWithPet  = critGearRune + (best.critPet || 0);
 
   // --- Evasion ---
   const evaFromGear = best.evaLines * tierVals.EV;
