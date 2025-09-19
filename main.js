@@ -14,12 +14,7 @@ window.addEventListener('DOMContentLoaded', () => {
 // ---- Rules ----
 const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
-  caps: {
-    critFromGearRune: 0.50,
-    evaFromGearRune: 0.40,
-    drFromGearRune: 1.00,
-    critTotal: 1.00
-  },
+  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
   baseInterval: {
     Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
     Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
@@ -34,7 +29,7 @@ const rules = {
     Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
   },
   pets: {
-    None:{AS:0.00, CR:0.00},
+    None:{AS:0, CR:0},
     B:{AS:0.06, CR:0.06},
     A:{AS:0.09, CR:0.09},
     S:{AS:0.12, CR:0.12}
@@ -49,8 +44,8 @@ function fmtSec(s){ return s.toFixed(3) + 's'; }
 function run(){
   const cls    = els.cls.value;
   const focus  = els.focus.value;
-  const weap   = els.weap.value;
-  const tier   = els.gearTier.value;
+  const weap   = els.weap.value;       // weapon type
+  const tier   = els.gearTier.value;   // gear tier
   const statColor = +els.col.value;
   const charMod   = +els.char.value;
   const guild     = (+els.guild.value||0)/100;
@@ -65,48 +60,58 @@ function run(){
   let best = null;
   const petOptions = Object.entries(rules.pets);
 
-  // 1) Without quicken
+  // 1) Try WITHOUT quicken
   for (let rune=0; rune<=6; rune++){
     for (const [petName, petStats] of petOptions){
       const petAS = petStats.AS;
       const petCR = petStats.CR;
+
       for (let gearLines=0; gearLines<=8; gearLines++){
         const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
         const finalInterval = base * (1 - totalAS) * fury;
+
         if (finalInterval <= target){
           const requiredAS = 1 - (target / base);
           const waste = totalAS - requiredAS;
+
           if (!best || gearLines < best.gearLines ||
              (gearLines === best.gearLines && waste < best.waste - 1e-9)){
-            best = {gearLines,rune,quick:0,
+            best = {
+              gearLines,rune,quick:0,
               petName,petAS,critPet:petCR,
               totalAS,finalInterval,waste,
-              tierVals,critLines:0,evaLines:0,drLines:0};
+              tierVals,critLines:0,evaLines:0,drLines:0
+            };
           }
         }
       }
     }
   }
 
-  // 2) With quicken (Lv1–2)
+  // 2) If no valid combo, allow quicken (last resort)
   if (!best){
     for (let rune=0; rune<=6; rune++){
       for (let quick=1; quick<=2; quick++){
         for (const [petName, petStats] of petOptions){
           const petAS = petStats.AS;
           const petCR = petStats.CR;
+
           for (let gearLines=0; gearLines<=8; gearLines++){
             const totalAS = passiveAS + rune*0.01 + petAS + quick*0.01 + gearLines*tierVals.AS;
             const finalInterval = base * (1 - totalAS) * fury;
+
             if (finalInterval <= target){
               const requiredAS = 1 - (target / base);
               const waste = totalAS - requiredAS;
+
               if (!best || gearLines < best.gearLines ||
                  (gearLines === best.gearLines && waste < best.waste - 1e-9)){
-                best = {gearLines,rune,quick,
+                best = {
+                  gearLines,rune,quick,
                   petName,petAS,critPet:petCR,
                   totalAS,finalInterval,waste,
-                  tierVals,critLines:0,evaLines:0,drLines:0};
+                  tierVals,critLines:0,evaLines:0,drLines:0
+                };
               }
             }
           }
@@ -132,7 +137,7 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
   const sum = document.getElementById('summary');
   sum.innerHTML = `
     <h3>Optimal Combo</h3>
-    <div>${cls} (${focus}) | Weapon: ${weap} | Gear: ${tier}</div>
+    <div>${cls} (${focus}) | Weapon: ${weap} | Tier: ${tier}</div>
     <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
     <ul>
       <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
@@ -145,30 +150,6 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
     <hr/>
   `;
 }
-// ---- Rules ----
-const rules = {
-  slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
-  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
-  baseInterval: {
-    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
-  },
-  lineValues: {
-    Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-    Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-    Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
-    Abyss:{AS:0.16, CR:0.16, EV:0.16, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12} // FIXED EV
-  },
-  pets: {
-    None:{AS:0, CR:0},
-    B:{AS:0.08, CR:0.06},
-    A:{AS:0.10, CR:0.09},
-    S:{AS:0.12, CR:0.12}
-  }
-};
 
 // ---- Slots ----
 function renderSlots(cls,focus,tier,best){
@@ -230,8 +211,8 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-  // DR% (only for Tank builds)
-  if (focus === "Tank") {
+  // DR% (only for Tanks)
+  if (focus==="Tank"){
     let drAccum = 0;
     for (const s of rules.slots){
       if (s!=="Weapon" &&
@@ -246,7 +227,7 @@ function renderSlots(cls,focus,tier,best){
 
   // Fill remaining
   let filler = (focus==="DPS")
-    ? ["ATK%","Crit DMG","Monster DMG"] // DPS filler has NO DR/HP/DEF
+    ? ["ATK%","Crit DMG","Monster DMG"]
     : ["DR%","HP%","DEF%","ATK%","Crit Chance"];
 
   for (const s of rules.slots){
@@ -272,28 +253,23 @@ function renderSlots(cls,focus,tier,best){
 
   renderTotals(best);
 }
+
 // ---- Totals ----
 function renderTotals(best){
   const box = document.getElementById('totals');
   box.innerHTML = '';
 
-  // Attack Speed gear+rune
   const asGear = best.gearLines * best.tierVals.AS;
   const asRune = best.rune * 0.01;
   const totalAS = asGear + asRune;
 
-  // Crit Chance gear+rune (cap 50%)
   const critGearRune = Math.min(best.critLines * best.tierVals.CR, rules.caps.critFromGearRune);
   const critWaste = Math.max(0, (best.critLines * best.tierVals.CR) - rules.caps.critFromGearRune);
+  const critWithPet = critGearRune + (best.critPet || 0);
 
-  // Crit Chance with Pet
-  const critWithPet = Math.min(critGearRune + (best.critPet || 0), rules.caps.critTotal);
-
-  // Evasion gear+rune (cap 40%)
   const evaGearRune = Math.min(best.evaLines * best.tierVals.EV, rules.caps.evaFromGearRune);
   const evaWaste = Math.max(0, (best.evaLines * best.tierVals.EV) - rules.caps.evaFromGearRune);
 
-  // DR gear+rune (cap 100%)
   const drGearRune = Math.min(best.drLines * best.tierVals.DR, rules.caps.drFromGearRune);
   const drWaste = Math.max(0, (best.drLines * best.tierVals.DR) - rules.caps.drFromGearRune);
 
