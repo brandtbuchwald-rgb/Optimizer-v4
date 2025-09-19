@@ -1,13 +1,12 @@
+
 // ==========================
-// Rediscover Optimizer v4
+// Rediscover Optimizer v4 (Clean)
 // ==========================
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
   const q = id => document.getElementById(id);
-  ['cls','focus','gearTier','col','char','guild','secret','target','fury',
-   'line_atkspd','line_crit','line_eva','line_atk','line_cd',
-   'line_md','line_hp','line_def','line_dr'
+  ['cls','focus','gearTier','col','char','guild','secret','target','fury'
   ].forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
   els.runBtn.addEventListener('click', () => run());
