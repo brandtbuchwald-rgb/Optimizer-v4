@@ -268,7 +268,7 @@ const drWaste = drRaw - drFromGearRune;
     <div>Monster DMG = ${(monsterDmg*100).toFixed(1)}%</div>
     <div>HP% = ${(hpPct*100).toFixed(1)}%</div>
     <div>DEF% = ${(defPct*100).toFixed(1)}%</div>
-    <div>DR% = ${(drFromGearRune*100).toFixed(1)}%</div>
+    <div>DR% = ${(drFromGearRune*100).toFixed(1)}% ${drWaste > 0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
   `;
 
   box.innerHTML = html;
