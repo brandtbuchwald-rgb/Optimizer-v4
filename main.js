@@ -62,24 +62,28 @@ function run(){
 
   // --- Brute force search for best combo ---
   let best = null;
-  const petOptions = Object.entries(rules.pets);
-  for (let rune=0; rune<=6; rune++){
-    for (let quick=0; quick<=5; quick++){
-      for (let [petName,petAS] of petOptions){
-        for (let gearLines=0; gearLines<=8; gearLines++){
-          const totalAS = passiveAS + (rune*0.01) + (quick*0.01) + petAS + (gearLines*tierVals.AS);
-          const finalInterval = base * (1 - totalAS) * fury;
-          if (finalInterval <= target){
-            const waste = totalAS - (1 - target/base);
-            if (!best || waste < best.waste){
-              best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
-            }
+const petOptions = Object.entries(rules.pets);
+
+for (let rune=0; rune<=6; rune++){
+  for (let quick=0; quick<=5; quick++){
+    for (const [petName,petAS] of petOptions){
+      for (let gearLines=0; gearLines<=8; gearLines++){
+        const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
+        const finalInterval = base * (1 - totalAS) * fury;
+        if (finalInterval <= target){
+          const requiredAS = 1 - (target / base);           // AS needed ignoring fury (fury already applied above)
+          const waste = totalAS - requiredAS;
+
+          if (!best ||
+              gearLines < best.gearLines ||
+              (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
+            best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
           }
         }
       }
     }
   }
-
+}
   if (!best){
     document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
     return;
