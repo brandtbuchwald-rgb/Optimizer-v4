@@ -14,7 +14,11 @@ window.addEventListener('DOMContentLoaded', () => {
 // ---- Rules ----
 const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
-  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
+  caps: { 
+    critFromGearRune: 0.50,   // 50% crit max from gear+rune
+    evaFromGearRune: 0.40,    // 40% evasion max from gear+rune
+    drFromGearRune: 1.00      // 100% DR max
+  },
   baseInterval: {
     Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
     Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
@@ -23,19 +27,28 @@ const rules = {
     "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
   },
   lineValues: {
-    Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-    Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
-    Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
-    Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
+    Primal:   {AS:0.12, CR:0.12, EV:0.12, ATK:0.23, CD:0.35, MD:0.35, HP:0.23, DF:0.23, DR:0.14},
+    Original: {AS:0.12, CR:0.12, EV:0.12, ATK:0.23, CD:0.35, MD:0.35, HP:0.23, DF:0.23, DR:0.17},
+    Chaos:    {AS:0.14, CR:0.14, EV:0.14, ATK:0.26, CD:0.40, MD:0.40, HP:0.26, DF:0.26, DR:0.19},
+    Abyss:    {AS:0.16, CR:0.16, EV:0.16, ATK:0.29, CD:0.45, MD:0.45, HP:0.29, DF:0.29, DR:0.21}
+  },
+  purple5th: {
+    // special purple rules by slot
+    Helm:   ["Boss DMG","HP%"],
+    Belt:   ["Boss DMG","HP%"],
+    Necklace: ["Crit DMG"],
+    Ring:   ["Crit DMG"],
+    Chest:  ["ATK%"],
+    Gloves: ["ATK%"],
+    Boots:  ["ATK%"]
   },
   pets: {
     None:{AS:0, CR:0},
-    B:{AS:0.06, CR:0.06},
-    A:{AS:0.09, CR:0.09},
+    B:{AS:0.08, CR:0.06},
+    A:{AS:0.10, CR:0.09},
     S:{AS:0.12, CR:0.12}
   }
 };
-
 // ---- Helpers ----
 function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
 function fmtSec(s){ return s.toFixed(3) + 's'; }
