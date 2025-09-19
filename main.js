@@ -103,16 +103,21 @@ function run(rules){
   // 1. Weapon
   allocateWeapon(layout, focus);
 
-  // 2. Assign ATK SPD across slots until cap
-  let asAccum = 0;
-  const nonWeaponSlots = slots.filter(s => s !== "Weapon");
-  for (const s of nonWeaponSlots){
-    if (asAccum < needFromEquip){
-      layout[s].push("ATK SPD");
-      asAccum += line.AS;
-    }
-    if (asAccum >= needFromEquip) break;
+// 2. Assign ATK SPD across slots until interval goal is hit
+let asAccum = 0;
+const nonWeaponSlots = slots.filter(s => s !== "Weapon");
+for (const s of nonWeaponSlots){
+  if (asAccum < needFromEquip){
+    layout[s].push("ATK SPD");
+    asAccum += line.AS;
+
+    // Recalc interval after this line
+    const totalAS = Math.min(0.95, statColor + charMod + guild + secret + runeAS + petAS + asAccum);
+    const finalInterval = base * (1 - quicken) * fury * (1 - totalAS);
+
+    if (finalInterval <= target) break; // stop if target is already reached
   }
+}
 
  // 3. Crit Chance until 50%
 let critAccum = 0;
