@@ -187,47 +187,31 @@ function renderTotals(best, tierVals) {
   const box = document.getElementById('totals');
   box.innerHTML = '';
 
-  // --- Attack Speed ---
-  const asGear = best.gearLines * tierVals.AS;
-  const asRune = best.rune * 0.01;      
-  const asPet  = best.petAS || 0;
-  const asQuick = (best.quick || 0) * 0.01;
+  // Attack Speed (gear+rune only)
+  const asGear   = best.gearLines * tierVals.AS;
+  const asRune   = best.rune * 0.01;
+  const totalAS  = asGear + asRune;
 
-  const asGearRune = asGear + asRune;
-  const asFinal = asGear + asRune + asPet + asQuick;
-  const asWaste = Math.max(0, asGearRune - (1 - (best.finalInterval / (best.base || 1))));
+  // Crit Chance (gear+rune only, then add pet separately)
+  const critFromGearRune = Math.min(best.critLines * tierVals.CR, rules.caps.critFromGearRune);
+  const critWaste = Math.max(0, best.critLines * tierVals.CR - rules.caps.critFromGearRune);
+  const critWithPet = critFromGearRune + (best.critPet || 0);
 
-  // --- Crit Chance ---
-  const critFromGear = best.critLines * tierVals.CR; 
-  const critFromRune = best.critRune || 0; 
-  const critGearRune = Math.min(critFromGear + critFromRune, rules.caps.critFromGearRune);
-  const critWaste    = (critFromGear + critFromRune) - rules.caps.critFromGearRune;
-  const critWithPet  = critGearRune + (best.critPet || 0);
+  // Evasion
+  const evaFromGearRune = Math.min(best.evaLines * tierVals.EV, rules.caps.evaFromGearRune);
+  const evaWaste = Math.max(0, best.evaLines * tierVals.EV - rules.caps.evaFromGearRune);
 
-  // --- Evasion ---
-  const evaFromGear = best.evaLines * tierVals.EV;
-  const evaFromRune = best.evaRune || 0;
-  const evaGearRune = Math.min(evaFromGear + evaFromRune, rules.caps.evaFromGearRune);
-  const evaWaste    = (evaFromGear + evaFromRune) - rules.caps.evaFromGearRune;
-
-  // --- DR% ---
-  const drFromGear = best.drLines * tierVals.DR;
-  const drFromRune = best.drRune || 0;
-  const drGearRune = Math.min(drFromGear + drFromRune, rules.caps.drFromGearRune);
-  const drWaste    = (drFromGear + drFromRune) - rules.caps.drFromGearRune;
+  // DR
+  const drFromGearRune = Math.min(best.drLines * tierVals.DR, rules.caps.drFromGearRune);
+  const drWaste = Math.max(0, best.drLines * tierVals.DR - rules.caps.drFromGearRune);
 
   const html = `
     <h3>Totals</h3>
-    <div>Attack Speed (gear+rune) = ${(asGearRune*100).toFixed(1)}%</div>
-        ${asWaste>0 ? `(waste ${(asWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>Crit Chance (gear+rune) = ${(critGearRune*100).toFixed(1)}%
-        ${critWaste>0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
+    <div>Attack Speed (gear+rune) = ${(totalAS*100).toFixed(1)}%</div>
+    <div>Crit Chance (gear+rune) = ${(critFromGearRune*100).toFixed(1)}% ${critWaste>0?`(waste ${(critWaste*100).toFixed(1)}%)`:''}</div>
     <div>Crit Chance + Pet = ${(critWithPet*100).toFixed(1)}%</div>
-    <div>Evasion (gear+rune) = ${(evaGearRune*100).toFixed(1)}%
-        ${evaWaste>0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>DR% (gear+rune) = ${(drGearRune*100).toFixed(1)}%
-        ${drWaste>0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
+    <div>Evasion (gear+rune) = ${(evaFromGearRune*100).toFixed(1)}% ${evaWaste>0?`(waste ${(evaWaste*100).toFixed(1)}%)`:''}</div>
+    <div>DR% (gear+rune) = ${(drFromGearRune*100).toFixed(1)}% ${drWaste>0?`(waste ${(drWaste*100).toFixed(1)}%)`:''}</div>
   `;
-
   box.innerHTML = html;
 }
