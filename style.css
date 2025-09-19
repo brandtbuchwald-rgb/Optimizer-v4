@@ -1,0 +1,89 @@
+:root {
+  --bg: #0b0f12;
+  --card: #121820;
+  --text: #f5f7fa;
+  --muted: #a5b0bb;
+  --accent: #4ade80;
+  --warn: #fbbf24;
+  --danger: #f87171;
+  --good: #34d399;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  font: 16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  background: radial-gradient(1200px 800px at 15% -10%, #12202a, #0b0f12);
+  color: var(--text);
+}
+header, footer { padding: 16px 20px; }
+h1 { margin: 0 0 6px 0; font-weight: 800; letter-spacing: 0.3px; }
+p { margin: 0; }
+.grid {
+  display: grid;
+  grid-template-columns: 360px 360px 1fr;
+  gap: 14px;
+  padding: 10px 14px 24px;
+}
+.card {
+  background: linear-gradient(180deg, #17212b, #121820);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 14px;
+  box-shadow: 0 10px 24px rgba(0,0,0,0.3);
+}
+h2 { margin: 0 0 10px; font-size: 18px; }
+.row {
+  display: grid;
+  grid-template-columns: 160px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0;
+}
+.row input[type="number"], .row select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: #0f141a;
+  color: var(--text);
+}
+button {
+  grid-column: 1 / -1;
+  padding: 10px 14px;
+  border: 0;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #10b981, #22c55e);
+  color: #05130c;
+  font-weight: 700;
+  cursor: pointer;
+}
+.hint { color: var(--muted); font-size: 12px; }
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 120px;
+  gap: 8px 10px;
+}
+#summary { font-size: 14px; }
+#summary .stat { margin: 6px 0; }
+.bad { color: var(--danger); font-weight: 700; }
+.warn { color: var(--warn); font-weight: 700; }
+.good { color: var(--good); font-weight: 700; }
+#slots { margin-top: 10px; display: grid; gap: 10px; }
+.slot {
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 8px;
+  padding: 10px;
+  background: #0f141a;
+}
+.slot h3 { margin: 0 0 6px; font-size: 15px; }
+.slot .pill {
+  display: inline-block;
+  margin: 3px 4px 0 0;
+  padding: 4px 6px;
+  border: 1px solid rgba(255,255,255,0.08);
+  border-radius: 999px;
+  font-size: 12px;
+}
+@media (max-width: 1100px) {
+  .grid { grid-template-columns: 1fr; }
+}
