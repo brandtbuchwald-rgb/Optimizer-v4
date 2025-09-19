@@ -152,13 +152,63 @@ function renderSlots(cls,focus,tier,best){
       layout['Weapon'] = ["Cast Demon Lord", "ATK%", "Crit DMG", "Monster DMG"];
     }
   } else { // Tank
-    if (tier === "Primal") {
-      layout['Weapon'] = ["Cast Evasion", "HP%", "DEF%"];
-    } else {
-      layout['Weapon'] = ["Cast Evasion", "HP%", "DEF%", "DR%"];
+    if (focus === "Tank") {
+  for (const s of rules.slots) {
+    if (s === "Weapon") {
+      // Tank weapon baseline
+      layout[s] = ["Cast Evasion","HP%","DEF%"];
+
+      // If gear tier allows 4 lines, force DR% as 4th
+      if (["Original","Chaos","Abyss"].includes(tier)) {
+        layout[s].push("DR%");
+      }
+      continue;
+    }
+
+    // then your ATK SPD / Evasion / DR / filler logic for the other slots...
+  }
+}
+  }
+if (focus === "Tank") {
+  // --- Tank Slot Filling ---
+  let evaAccum = 0;
+  let drAccum = 0;
+
+  for (const s of rules.slots) {
+    if (s === "Weapon") {
+      // Tank weapons always baseline
+      layout[s] = ["Cast Evasion","HP%","DEF%"];
+      continue;
+    }
+
+    // --- Step 1: ATK SPD if needed ---
+    if (asLeft > 0) {
+      layout[s].push("ATK SPD");
+      asLeft--;
+    }
+
+    // --- Step 2: Evasion up to 40% ---
+    if (!layout[s].includes("ATK SPD") &&
+        (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune) {
+      layout[s].push("Evasion");
+      evaAccum += tierVals.EV;
+    }
+
+    // --- Step 3: DR% up to 100% ---
+    if ((drAccum + tierVals.DR) <= rules.caps.drFromGearRune) {
+      layout[s].push("DR%");
+      drAccum += tierVals.DR;
+    }
+
+    // --- Step 4: Fill with tank priorities (HP/DEF/ATK/Crit) ---
+    const filler = ["HP%","DEF%","ATK%","Crit Chance"];
+    for (const f of filler) {
+      if (layout[s].length < 4 && !layout[s].includes(f)) {
+        layout[s].push(f);
+      }
     }
   }
-
+}
   // ---- Assign ATK SPD lines ----
   let asLeft = best.gearLines;
   for (const s of rules.slots){
