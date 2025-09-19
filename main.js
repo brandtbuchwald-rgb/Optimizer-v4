@@ -145,6 +145,31 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
     <hr/>
   `;
 }
+// ---- Rules ----
+const rules = {
+  slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
+  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
+  baseInterval: {
+    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
+  },
+  lineValues: {
+    Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
+    Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
+    Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
+    Abyss:{AS:0.16, CR:0.16, EV:0.16, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12} // FIXED EV
+  },
+  pets: {
+    None:{AS:0, CR:0},
+    B:{AS:0.08, CR:0.06},
+    A:{AS:0.10, CR:0.09},
+    S:{AS:0.12, CR:0.12}
+  }
+};
+
 // ---- Slots ----
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
@@ -205,21 +230,23 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-  // DR%
-  let drAccum = 0;
-  for (const s of rules.slots){
-    if (s!=="Weapon" &&
-        drAccum + tierVals.DR <= rules.caps.drFromGearRune &&
-        layout[s].length < 4){
-      layout[s].push("DR%");
-      drAccum += tierVals.DR;
-      best.drLines++;
+  // DR% (only for Tank builds)
+  if (focus === "Tank") {
+    let drAccum = 0;
+    for (const s of rules.slots){
+      if (s!=="Weapon" &&
+          drAccum + tierVals.DR <= rules.caps.drFromGearRune &&
+          layout[s].length < 4){
+        layout[s].push("DR%");
+        drAccum += tierVals.DR;
+        best.drLines++;
+      }
     }
   }
 
   // Fill remaining
   let filler = (focus==="DPS")
-    ? ["ATK%","Crit DMG","Monster DMG"]
+    ? ["ATK%","Crit DMG","Monster DMG"] // DPS filler has NO DR/HP/DEF
     : ["DR%","HP%","DEF%","ATK%","Crit Chance"];
 
   for (const s of rules.slots){
@@ -245,7 +272,6 @@ function renderSlots(cls,focus,tier,best){
 
   renderTotals(best);
 }
-
 // ---- Totals ----
 function renderTotals(best){
   const box = document.getElementById('totals');
