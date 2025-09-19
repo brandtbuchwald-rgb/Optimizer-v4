@@ -176,52 +176,47 @@ for (const s of rules.slots){
   // Add totals panel at the end
   renderTotals(best, layout);
 }
-function renderTotals(best, layout){
-  const box = document.getElementById('slots');
-  const div = document.createElement('div');
-  div.className = 'slot';
+function renderTotals(best, tierVals) {
+  const box = document.getElementById('totals');
+  box.innerHTML = '';
 
-  // Count how many lines of each stat were assigned
-  const statCounts = {};
-  for (const stats of Object.values(layout)){
-    for (const s of stats){
-      statCounts[s] = (statCounts[s]||0)+1;
-    }
-  }
+  // --- Attack Speed ---
+  // Only from gear, rune, pet (no guild/secret/statcolor/char)
+  const asGear   = best.gearLines * tierVals.AS;
+  const asRune   = best.rune;
+  const asPet    = best.pet;
+  const totalAS  = asGear + asRune + asPet;
 
-  const tierVals = best.tierVals;
+  // --- Crit Chance ---
+  // Cap at 50% gear+rune; pet added separately
+  const critFromGearRune = Math.min(best.critLines * tierVals.CR + best.critRune, rules.caps.critFromGearRune);
+  const critWithPet = critFromGearRune + best.critPet;
 
-  function statLine(name, val, perLine=null, count=null){
-    if (count && perLine){
-      return `<div>${name} = ${fmtPct(val)} (${count} × ${fmtPct(perLine)})</div>`;
-    } else {
-      return `<div>${name} = ${fmtPct(val)}</div>`;
-    }
-  }
+  // --- Evasion ---
+  // Only from gear+rune (cap 40%)
+  const evaTotal = Math.min(best.evaLines * tierVals.EV + best.evaRune, rules.caps.evaFromGearRune);
 
-  // Totals math
-  const atkSpd = (statCounts['ATK SPD']||0) * tierVals.AS;
-  const crit   = (statCounts['Crit Chance']||0) * tierVals.CR;
-  const eva    = (statCounts['Evasion']||0) * tierVals.EV;
-  const atk    = (statCounts['ATK%']||0) * tierVals.ATK;
-  const cd     = (statCounts['Crit DMG']||0) * tierVals.CD;
-  const md     = (statCounts['Monster DMG']||0) * tierVals.MD;
-  const hp     = (statCounts['HP%']||0) * tierVals.HP;
-  const df     = (statCounts['DEF%']||0) * tierVals.DF;
-  const dr     = (statCounts['DR%']||0) * tierVals.DR;
+  // --- Damage stats ---
+  const atkPct = best.atkLines * tierVals.ATK;
+  const critDmg = best.cdLines * tierVals.CD;
+  const monsterDmg = best.mdLines * tierVals.MD;
+  const hpPct = best.hpLines * tierVals.HP;
+  const defPct = best.dfLines * tierVals.DF;
+  const drPct = best.drLines * tierVals.DR;
 
-  div.innerHTML = `
+  // --- Build totals display ---
+  const html = `
     <h3>Totals</h3>
-    ${statLine("Attack Speed", atkSpd, tierVals.AS, statCounts['ATK SPD']||0)}
-    ${statLine("Crit Chance", crit, tierVals.CR, statCounts['Crit Chance']||0)}
-    ${statLine("Evasion", eva, tierVals.EV, statCounts['Evasion']||0)}
-    ${statLine("Attack%", atk, tierVals.ATK, statCounts['ATK%']||0)}
-    ${statLine("Crit DMG", cd, tierVals.CD, statCounts['Crit DMG']||0)}
-    ${statLine("Monster DMG", md, tierVals.MD, statCounts['Monster DMG']||0)}
-    ${statLine("HP%", hp, tierVals.HP, statCounts['HP%']||0)}
-    ${statLine("DEF%", df, tierVals.DF, statCounts['DEF%']||0)}
-    ${statLine("DR%", dr, tierVals.DR, statCounts['DR%']||0)}
+    <div>Attack Speed = ${(totalAS*100).toFixed(1)}%</div>
+    <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}% (Pet ${(critWithPet*100).toFixed(1)}%)</div>
+    <div>Evasion = ${(evaTotal*100).toFixed(1)}%</div>
+    <div>Attack% = ${(atkPct*100).toFixed(1)}%</div>
+    <div>Crit DMG = ${critDmg}</div>
+    <div>Monster DMG = ${(monsterDmg*100).toFixed(1)}%</div>
+    <div>HP% = ${(hpPct*100).toFixed(1)}%</div>
+    <div>DEF% = ${(defPct*100).toFixed(1)}%</div>
+    <div>DR% = ${(drPct*100).toFixed(1)}%</div>
   `;
 
-  box.appendChild(div);
+  box.innerHTML = html;
 }
