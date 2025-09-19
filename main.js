@@ -133,24 +133,28 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-  // Crit Chance until 50%
-  let critAccum=0;
-  for (const s of rules.slots){
-    if (s!=="Weapon" && !layout[s].includes("ATK SPD") && critAccum<rules.caps.critFromGearRune){
-      layout[s].push("Crit Chance");
-      critAccum += tierVals.CR;
-    }
+  // Crit Chance until 50% (gear + rune cap)
+let critAccum = 0;
+for (const s of rules.slots){
+  if (s !== "Weapon" &&
+      !layout[s].includes("ATK SPD") &&
+      (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
+    layout[s].push("Crit Chance");
+    critAccum += tierVals.CR;
   }
+}
 
-  // Evasion until 40%
-  let evaAccum=0;
-  for (const s of rules.slots){
-    if (s!=="Weapon" && !layout[s].includes("ATK SPD") && !layout[s].includes("Crit Chance") && evaAccum<rules.caps.evaFromGearRune){
-      layout[s].push("Evasion");
-      evaAccum += tierVals.EV;
-    }
+// Evasion until 40% (gear + rune cap)
+let evaAccum = 0;
+for (const s of rules.slots){
+  if (s !== "Weapon" &&
+      !layout[s].includes("ATK SPD") &&
+      !layout[s].includes("Crit Chance") &&
+      (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
+    layout[s].push("Evasion");
+    evaAccum += tierVals.EV;
   }
-
+}
   // Fill remaining with DPS priorities
   const filler = (focus==="DPS")?["ATK%","Crit DMG","Monster DMG"]:["Evasion","HP%","DR%","DEF%","ATK%"];
   for (const s of rules.slots){
