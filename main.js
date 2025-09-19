@@ -72,7 +72,7 @@ function run(rules){
   const guild     = pctNum(els.guild);
   const secret    = pctNum(els.secret);
   const runeAS    = pctNum(els.rune);
-  const quicken   = +els.quicken.value;
+  const quicken = (+els.quicken.value || 0) * 0.01;
   const petAS     = +els.pet.value;
   const target    = +els.target.value || 0.25;
   const fury      = (els.fury.checked && cls === 'Berserker') ? 1.25 : 1.0;
