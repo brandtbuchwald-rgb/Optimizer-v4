@@ -59,19 +59,28 @@ function run(){
   let best = null;
   const petOptions = Object.entries(rules.pets);
 
-  // 1) Try without quicken
+  // 1) Try WITHOUT quicken
   for (let rune=0; rune<=6; rune++){
-    for (const [petName,petAS] of petOptions){
+    for (const [petName, petStats] of petOptions){
+      const petAS = petStats.AS;
+      const petCR = petStats.CR;
+
       for (let gearLines=0; gearLines<=8; gearLines++){
         const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
         const finalInterval = base * (1 - totalAS) * fury;
+
         if (finalInterval <= target){
           const requiredAS = 1 - (target / base);
           const waste = totalAS - requiredAS;
+
           if (!best || gearLines < best.gearLines ||
              (gearLines === best.gearLines && waste < best.waste - 1e-9)){
-            best = {gearLines,rune,quick:0,petName,petAS,totalAS,finalInterval,waste,
-                    tierVals,critLines:0,evaLines:0,drLines:0};
+            best = {
+              gearLines,rune,quick:0,
+              petName,petAS,critPet:petCR,
+              totalAS,finalInterval,waste,
+              tierVals,critLines:0,evaLines:0,drLines:0
+            };
           }
         }
       }
@@ -82,17 +91,26 @@ function run(){
   if (!best){
     for (let rune=0; rune<=6; rune++){
       for (let quick=1; quick<=2; quick++){ // only Lv1-2
-        for (const [petName,petAS] of petOptions){
+        for (const [petName, petStats] of petOptions){
+          const petAS = petStats.AS;
+          const petCR = petStats.CR;
+
           for (let gearLines=0; gearLines<=8; gearLines++){
             const totalAS = passiveAS + rune*0.01 + petAS + quick*0.01 + gearLines*tierVals.AS;
             const finalInterval = base * (1 - totalAS) * fury;
+
             if (finalInterval <= target){
               const requiredAS = 1 - (target / base);
               const waste = totalAS - requiredAS;
+
               if (!best || gearLines < best.gearLines ||
                  (gearLines === best.gearLines && waste < best.waste - 1e-9)){
-                best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,
-                        tierVals,critLines:0,evaLines:0,drLines:0};
+                best = {
+                  gearLines,rune,quick,
+                  petName,petAS,critPet:petCR,
+                  totalAS,finalInterval,waste,
+                  tierVals,critLines:0,evaLines:0,drLines:0
+                };
               }
             }
           }
