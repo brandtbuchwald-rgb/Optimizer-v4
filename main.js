@@ -190,7 +190,18 @@ function renderSlots(cls,focus,tier,best){
       evaAccum += tierVals.EV;
     }
   }
-
+let drAccum = 0;
+for (const s of rules.slots){
+  if (s !== "Weapon" &&
+      drAccum < rules.caps.drFromGearRune &&
+      layout[s].length < 4){
+    // Only add if it won’t push past 100%
+    if (drAccum + tierVals.DR <= rules.caps.drFromGearRune) {
+      layout[s].push("DR%");
+      drAccum += tierVals.DR;
+    }
+  }
+}
   // ---- Fill remaining slots ----
   let filler;
   if (focus === "DPS") {
