@@ -135,11 +135,19 @@ function allocateWeapon(layout, focus){
 
 function renderSummary(d){
   const sum = document.getElementById('summary');
+
+  let intervalText;
+  if (d.finalInterval <= d.target) {
+    intervalText = `Cap reached: ${fmtSec(d.target)}`;
+  } else {
+    intervalText = `Current interval: ${fmtSec(d.finalInterval)}`;
+  }
+
   sum.innerHTML = `
     <div><b>${d.cls}</b> (${d.focus}) | Tier: ${d.weap}</div>
     <div>Base Interval: ${fmtSec(d.base)} → Target: ${fmtSec(d.target)}</div>
     <div>Total AS: ${fmtPct(d.totalAS)} | Needed: ${fmtPct(d.needAS)}</div>
-    <div>Projected final interval: ${fmtSec(d.finalInterval)}</div>
+    <div>${intervalText}</div>
     <hr/>
   `;
 }
