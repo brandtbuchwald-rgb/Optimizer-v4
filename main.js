@@ -135,6 +135,7 @@ function renderCombo(cls,focus,tier,base,target,best){
 }
 
 // --- Render slot-by-slot ---
+// --- Render slot-by-slot ---
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -143,51 +144,72 @@ function renderSlots(cls,focus,tier,best){
   const layout = {};
   for (const s of rules.slots) layout[s] = [];
 
-  // Weapon baseline
-  layout['Weapon'] = ['ATK%','Crit DMG','Monster DMG','DR%','Cast Demon Lord'];
+  // ---- WEAPON RULES ----
+  if (focus === "DPS") {
+    if (tier === "Primal") {
+      layout['Weapon'] = ["Cast Demon Lord", "ATK%", "Crit DMG"];
+    } else {
+      layout['Weapon'] = ["Cast Demon Lord", "ATK%", "Crit DMG", "Monster DMG"];
+    }
+  } else { // Tank
+    if (tier === "Primal") {
+      layout['Weapon'] = ["Cast Evasion", "HP%", "DEF%"];
+    } else {
+      layout['Weapon'] = ["Cast Evasion", "HP%", "DEF%", "DR%"];
+    }
+  }
 
-  // Assign ATK SPD lines
+  // ---- Assign ATK SPD lines ----
   let asLeft = best.gearLines;
   for (const s of rules.slots){
-    if (s!=="Weapon" && asLeft>0){
+    if (s !== "Weapon" && asLeft > 0){
       layout[s].push("ATK SPD");
       asLeft--;
     }
   }
 
-  // Crit Chance until 50% (gear + rune cap)
-let critAccum = 0;
-for (const s of rules.slots){
-  if (s !== "Weapon" &&
-      !layout[s].includes("ATK SPD") &&
-      (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
-    layout[s].push("Crit Chance");
-    critAccum += tierVals.CR;
-  }
-}
-
-// Evasion until 40% (gear + rune cap)
-let evaAccum = 0;
-for (const s of rules.slots){
-  if (s !== "Weapon" &&
-      !layout[s].includes("ATK SPD") &&
-      !layout[s].includes("Crit Chance") &&
-      (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
-    layout[s].push("Evasion");
-    evaAccum += tierVals.EV;
-  }
-}
-  // Fill remaining with DPS priorities
-  const filler = (focus==="DPS")?["ATK%","Crit DMG","Monster DMG"]:["Evasion","HP%","DR%","DEF%","ATK%"];
+  // ---- Crit Chance until cap (both DPS & Tank) ----
+  let critAccum = 0;
   for (const s of rules.slots){
-    while(layout[s].length<4){
+    if (s !== "Weapon" &&
+        !layout[s].includes("ATK SPD") &&
+        (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
+      layout[s].push("Crit Chance");
+      critAccum += tierVals.CR;
+    }
+  }
+
+  // ---- Evasion until cap ----
+  let evaAccum = 0;
+  for (const s of rules.slots){
+    if (s !== "Weapon" &&
+        !layout[s].includes("ATK SPD") &&
+        !layout[s].includes("Crit Chance") &&
+        (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
+      layout[s].push("Evasion");
+      evaAccum += tierVals.EV;
+    }
+  }
+
+  // ---- Fill remaining slots ----
+  let filler;
+  if (focus === "DPS") {
+    filler = ["ATK%","Crit DMG","Monster DMG"];
+  } else { // Tank priority: DR > HP% > DEF% > ATK% > Crit
+    filler = ["DR%","HP%","DEF%","ATK%","Crit Chance"];
+  }
+
+  for (const s of rules.slots){
+    while (layout[s].length < 4){
       for (const f of filler){
-        if(layout[s].length<4 && !layout[s].includes(f)) layout[s].push(f);
+        if (layout[s].length < 4 && !layout[s].includes(f)){
+          layout[s].push(f);
+        }
       }
     }
   }
 
-  // Output slots
+  // ---- Render output ----
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
@@ -195,8 +217,7 @@ for (const s of rules.slots){
     box.appendChild(div);
   }
 
-  // Add totals panel at the end
-  renderTotals(best, layout);
+  renderTotals(best, tierVals);
 }
 function renderTotals(best, tierVals) {
   const box = document.getElementById('totals');
