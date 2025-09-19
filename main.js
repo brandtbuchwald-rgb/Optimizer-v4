@@ -1,10 +1,10 @@
 // ===========================
-// Rediscover Optimizer v2
+// Rediscover Optimizer v2 (fixed)
 // ===========================
 // Slot-by-slot output version
 
 const els = {};
-window.addEventListener('DOMContentLoaded', async () => {
+window.addEventListener('DOMContentLoaded', () => {
   const q = id => document.getElementById(id);
   [
     'cls','focus','weap','col','char','guild','secret','rune',
@@ -14,7 +14,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   ].forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
 
-  const rules = {
+  els.runBtn.addEventListener('click', () => run(rules));
+  run(rules);
+});
+
+// Hardcoded rules (no fetch needed)
+const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
   caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40 },
   priority: {
@@ -71,7 +76,7 @@ function run(rules){
   const passiveAS = statColor + charMod + guild + secret + runeAS + petAS;
   const needFromEquip = Math.max(0, needAS - passiveAS);
 
-    // Pull line values from rules (gear tier specific)
+  // Pull line values from rules (gear tier specific)
   const tierVals = rules.lineValues[weap] || {};
   const line = {
     AS: tierVals.AS || +els.line_atkspd.value || 0.08,
@@ -84,6 +89,7 @@ function run(rules){
     DF:  +els.line_def.value    || 0.20,
     DR:  +els.line_dr.value     || 0.12
   };
+
   const slots = rules.slots.slice();
   const layout = {};
   for (const s of slots) layout[s] = [];
@@ -99,6 +105,7 @@ function run(rules){
       layout[s].push("ATK SPD");
       asAccum += line.AS;
     }
+    if (asAccum >= needFromEquip) break;
   }
 
   // 3. Crit Chance until 50%
@@ -107,6 +114,7 @@ function run(rules){
     if (!layout[s].includes("ATK SPD") && critAccum < rules.caps.critFromGearRune){
       layout[s].push("Crit Chance");
       critAccum += line.CR;
+      if (critAccum >= rules.caps.critFromGearRune) break;
     }
   }
 
@@ -118,10 +126,11 @@ function run(rules){
         evaAccum < rules.caps.evaFromGearRune){
       layout[s].push("Evasion");
       evaAccum += line.EV;
+      if (evaAccum >= rules.caps.evaFromGearRune) break;
     }
   }
 
-  // 5. Fill remaining with DPS priorities
+  // 5. Fill remaining with DPS/Tank priorities
   const filler = (focus === "DPS")
     ? ["ATK%","Crit DMG","Monster DMG"]
     : ["Evasion","HP%","DR%","DEF%","ATK%"];
@@ -136,7 +145,7 @@ function run(rules){
   }
 
   // 6. Compute totals
-  const totalAS = passiveAS + asAccum;
+  const totalAS = Math.min(0.95, passiveAS + asAccum); // clamp
   const finalInterval = base * (1 - quicken) * fury * (1 - totalAS);
 
   renderSummary({cls, focus, weap, base, target, totalAS, needAS, finalInterval});
