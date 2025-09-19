@@ -1,1 +1,21 @@
+{
+  "slots": ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
 
+  "caps": {
+    "critFromGearRune": 0.50,
+    "evaFromGearRune": 0.40
+  },
+
+  "priority": {
+    "DPS": ["ATK SPD","Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"],
+    "Tank": ["ATK SPD","Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"]
+  },
+
+  "baseInterval": {
+    "Original":{"Berserker":2.0,"Paladin":2.4,"Ranger":1.8,"Sorcerer":2.2},
+    "Primal":  {"Berserker":2.0,"Paladin":2.4,"Ranger":1.8,"Sorcerer":2.2},
+    "Chaos":   {"Berserker":2.0,"Paladin":2.4,"Ranger":1.8,"Sorcerer":2.2},
+    "Abyss":   {"Berserker":2.0,"Paladin":2.4,"Ranger":1.8,"Sorcerer":2.2},
+    "PvP/Boss":{"Berserker":2.2,"Paladin":2.5,"Ranger":2.0,"Sorcerer":2.3}
+  }
+}
