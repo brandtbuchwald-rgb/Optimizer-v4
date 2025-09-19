@@ -231,44 +231,49 @@ function renderTotals(best, tierVals) {
   box.innerHTML = '';
 
   // --- Attack Speed ---
-  // Only from gear, rune, pet (no guild/secret/statcolor/char)
   const asGear   = best.gearLines * tierVals.AS;
   const asRune   = best.rune;
-  const asPet    = best.pet;
+  const asPet    = best.petAS;
   const totalAS  = asGear + asRune + asPet;
 
-  // --- Crit Chance ---
-  // Cap at 50% gear+rune; pet added separately
-  const critFromGearRune = Math.min(best.critLines * tierVals.CR + best.critRune, rules.caps.critFromGearRune);
-  const critWithPet = critFromGearRune + best.critPet;
+  // --- Crit Chance (cap 50% gear+rune) ---
+  const critRaw = best.critLines * tierVals.CR + (best.critRune || 0);
+  const critFromGearRune = Math.min(critRaw, rules.caps.critFromGearRune);
+  const critWaste = critRaw - critFromGearRune;
+  const critWithPet = critFromGearRune + (best.critPet || 0);
 
-  // --- Evasion ---
-  // Only from gear+rune (cap 40%)
-  const evaTotal = Math.min(best.evaLines * tierVals.EV + best.evaRune, rules.caps.evaFromGearRune);
+  // --- Evasion (cap 40% gear+rune) ---
+  const evaRaw = best.evaLines * tierVals.EV + (best.evaRune || 0);
+  const evaTotal = Math.min(evaRaw, rules.caps.evaFromGearRune);
+  const evaWaste = evaRaw - evaTotal;
 
-  // --- Damage stats ---
+  // --- DR (cap 100% gear+rune) ---
+  const drRaw = best.drLines * tierVals.DR + (best.drRune || 0);
+  const drFromGearRune = Math.min(drRaw, rules.caps.drFromGearRune);
+  const drWaste = drRaw - drFromGearRune;
+
+  // --- Other stats ---
   const atkPct = best.atkLines * tierVals.ATK;
   const critDmg = best.cdLines * tierVals.CD;
   const monsterDmg = best.mdLines * tierVals.MD;
   const hpPct = best.hpLines * tierVals.HP;
   const defPct = best.dfLines * tierVals.DF;
-// --- DR% (gear + rune, cap 100%) ---
-const drRaw = best.drLines * tierVals.DR + (best.drRune || 0);
-const drFromGearRune = Math.min(drRaw, rules.caps.drFromGearRune);
-const drWaste = drRaw - drFromGearRune;
 
   // --- Build totals display ---
   const html = `
     <h3>Totals</h3>
     <div>Attack Speed = ${(totalAS*100).toFixed(1)}%</div>
-    <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}% (Pet ${(critWithPet*100).toFixed(1)}%)</div>
-    <div>Evasion = ${(evaTotal*100).toFixed(1)}%</div>
+    <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}% (Pet ${(critWithPet*100).toFixed(1)}%) 
+        ${critWaste > 0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
+    <div>Evasion = ${(evaTotal*100).toFixed(1)}% 
+        ${evaWaste > 0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
+    <div>DR% = ${(drFromGearRune*100).toFixed(1)}% 
+        ${drWaste > 0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
     <div>Attack% = ${(atkPct*100).toFixed(1)}%</div>
     <div>Crit DMG = ${critDmg}</div>
     <div>Monster DMG = ${(monsterDmg*100).toFixed(1)}%</div>
     <div>HP% = ${(hpPct*100).toFixed(1)}%</div>
     <div>DEF% = ${(defPct*100).toFixed(1)}%</div>
-    <div>DR% = ${(drFromGearRune*100).toFixed(1)}% ${drWaste > 0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
   `;
 
   box.innerHTML = html;
