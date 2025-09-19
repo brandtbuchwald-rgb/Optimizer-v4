@@ -243,16 +243,16 @@ function renderTotals(d){
   div.className = 'slot';
   div.innerHTML = `
     <h3>Totals</h3>
-    <div>Attack Speed (equip+rune+pet): ${fmtPct(d.equipRunePetAS)}</div>
-    <div>Crit Chance (equip+rune, capped 50%): ${fmtPct(d.critEquipRune)} (with pet: ${fmtPct(d.critWithPet)})</div>
-    <div>Evasion (equip+rune, capped 40%): ${fmtPct(d.evaEquipRune)}</div>
-    <div>Attack%: ${fmtPct(d.totals.ATK)}</div>
-    <div>Crit DMG: ${d.totals.CD}</div>
-    <div>Monster DMG: ${fmtPct(d.totals.MD)}</div>
-    <div>HP%: ${fmtPct(d.totals.HP)}</div>
-    <div>DEF%: ${fmtPct(d.totals.DF)}</div>
-    <div>DR%: ${fmtPct(d.totals.DR)}</div>
-    <div>Boss DMG: ${fmtPct(d.totals.Boss)}</div>
+    <div>Attack Speed = ${fmtPct(d.equipRunePetAS)}</div>
+    <div>Crit Chance = ${fmtPct(d.critEquipRune)} (Pet ${fmtPct(d.critWithPet)})</div>
+    <div>Evasion = ${fmtPct(d.evaEquipRune)}</div>
+    <div>Attack% = ${fmtPct(d.totals.ATK)}</div>
+    <div>Crit DMG = ${d.totals.CD}</div>
+    <div>Monster DMG = ${fmtPct(d.totals.MD)}</div>
+    <div>HP% = ${fmtPct(d.totals.HP)}</div>
+    <div>DEF% = ${fmtPct(d.totals.DF)}</div>
+    <div>DR% = ${fmtPct(d.totals.DR)}</div>
+    <div>Boss DMG = ${fmtPct(d.totals.Boss)}</div>
   `;
   box.appendChild(div);
 }
