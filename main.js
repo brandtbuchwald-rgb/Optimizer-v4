@@ -62,25 +62,30 @@ function run(){
   const petOptions = Object.entries(rules.pets);
 
   for (let rune=0; rune<=6; rune++){
-    for (let quick=0; quick<=2; quick++){  // limit quicken to lvl 2
-      for (const [petName,petAS] of petOptions){
+  for (const [petName,petAS] of petOptions){
+    // First pass: ignore quicken completely
+    let usedQuicken = false;
+    for (let gearLines=0; gearLines<=8; gearLines++){
+      const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
+      const finalInterval = base * (1 - totalAS) * fury;
+      if (finalInterval <= target){
+        best = {gearLines,rune,petName,petAS,totalAS,finalInterval,waste, ...};
+      }
+    }
+    // If no solution, THEN try adding quicken
+    if (!best){
+      for (let quick=1; quick<=2; quick++){ // cap quicken at 2
         for (let gearLines=0; gearLines<=8; gearLines++){
-          const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
+          const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS + quick*0.01;
           const finalInterval = base * (1 - totalAS) * fury;
           if (finalInterval <= target){
-            const requiredAS = 1 - (target / base);
-            const waste = totalAS - requiredAS;
-
-            if (!best ||
-                gearLines < best.gearLines ||
-                (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
-              best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
-            }
+            best = {gearLines,rune,petName,petAS,quick,totalAS,finalInterval,waste, ...};
           }
         }
       }
     }
   }
+}
 
   if (!best){
     document.getElementById('summary').innerHTML = "<b>No valid combo reaches cap.</b>";
@@ -224,7 +229,6 @@ function renderTotals(best, tierVals) {
   const html = `
     <h3>Totals</h3>
     <div>Attack Speed (gear+rune) = ${(asGearRune*100).toFixed(1)}%</div>
-    <div>Attack Speed (final w/ pet+quicken) = ${(asFinal*100).toFixed(1)}%
         ${asWaste>0 ? `(waste ${(asWaste*100).toFixed(1)}%)` : ''}</div>
     <div>Crit Chance (gear+rune) = ${(critGearRune*100).toFixed(1)}%
         ${critWaste>0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
