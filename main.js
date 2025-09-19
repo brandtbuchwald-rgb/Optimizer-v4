@@ -228,7 +228,7 @@ for (const s of rules.slots){
     box.appendChild(div);
   }
 
-  renderTotals(best, tierVals);
+  const drTotal = Math.min(best.drLines * tierVals.DR, rules.caps.drFromGearRune);
 }
 function renderTotals(best, tierVals) {
   const box = document.getElementById('totals');
