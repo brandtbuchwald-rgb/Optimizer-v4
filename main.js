@@ -252,12 +252,10 @@ function renderTotals(best, tierVals) {
   const monsterDmg = best.mdLines * tierVals.MD;
   const hpPct = best.hpLines * tierVals.HP;
   const defPct = best.dfLines * tierVals.DF;
-  // --- DR% (gear + rune, cap 100%) ---
 // --- DR% (gear + rune, cap 100%) ---
-const drFromGearRune = Math.min(
-  best.drLines * tierVals.DR + (best.drRune || 0),
-  rules.caps.drFromGearRune
-);
+const drRaw = best.drLines * tierVals.DR + (best.drRune || 0);
+const drFromGearRune = Math.min(drRaw, rules.caps.drFromGearRune);
+const drWaste = drRaw - drFromGearRune;
 
   // --- Build totals display ---
   const html = `
