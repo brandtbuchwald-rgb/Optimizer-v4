@@ -61,22 +61,31 @@ function run(){
   const passiveAS = statColor + charMod + guild + secret;
 
   // --- Brute force search for best let best = null;
+let bestValid = null;
+let closest = null;
 const petOptions = Object.entries(rules.pets);
 
 for (let rune=0; rune<=6; rune++){
-  for (let quick=0; quick<=2; quick++){   // limit Quicken Lv 0–2
+  for (let quick=0; quick<=2; quick++){   // Quicken capped at 2
     for (const [petName,petAS] of petOptions){
       for (let gearLines=0; gearLines<=8; gearLines++){
         const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
         const finalInterval = base * (1 - totalAS) * fury;
-        if (finalInterval <= target){
-          const requiredAS = 1 - (target / base);
-          const waste = totalAS - requiredAS;
 
-          if (!best ||
-              gearLines < best.gearLines ||
-              (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
-            best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
+        const requiredAS = 1 - (target / base);
+        const waste = totalAS - requiredAS;
+
+        // Track closest even if it doesn’t reach target
+        if (!closest || finalInterval < closest.finalInterval) {
+          closest = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
+        }
+
+        // Only accept valid combos that meet or beat target
+        if (finalInterval <= target){
+          if (!bestValid ||
+              gearLines < bestValid.gearLines ||
+              (gearLines === bestValid.gearLines && waste < bestValid.waste - 1e-9)) {
+            bestValid = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,tierVals};
           }
         }
       }
@@ -84,11 +93,23 @@ for (let rune=0; rune<=6; rune++){
   }
 }
 
-// Handle unreachable case
-if (!best){
+// Decide what to render
+if (bestValid){
+  renderCombo(cls,focus,tier,base,target,bestValid);
+  renderSlots(cls,focus,tier,bestValid);
+} else {
   document.getElementById('summary').innerHTML =
-    "<b>No valid combo reaches cap with ≤ Quicken Lv2.</b>";
-  return;
+    `<h3>Closest Possible (Quicken ≤2)</h3>
+     <div>${cls} (${focus}) | Tier: ${tier}</div>
+     <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
+     <div>Best Achieved: ${fmtSec(closest.finalInterval)}</div>
+     <ul>
+       <li>${closest.gearLines} gear line(s) ATK SPD @ ${fmtPct(closest.tierVals.AS)}</li>
+       <li>Rune ${closest.rune}%</li>
+       <li>Pet ${closest.petName} (${fmtPct(closest.petAS)})</li>
+       <li>Quicken Lv ${closest.quick} (${fmtPct(closest.quick*0.01)})</li>
+     </ul>
+     <div>Total AS = ${fmtPct(closest.totalAS)}</div>`;
 }
   renderCombo(cls,focus,tier,base,target,best);
   renderSlots(cls,focus,tier,best);
