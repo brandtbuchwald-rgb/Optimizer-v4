@@ -188,21 +188,41 @@ function renderSlots(cls,focus,tier,best){
 }
 
 // --- Totals with waste tracking ---
-function renderTotals(best, tierVals){
-  const box=document.getElementById('totals');
-  if(!box) return;
+function renderTotals(best, tierVals) {
+  const box = document.getElementById('totals');
+  box.innerHTML = '';
 
-  const totalAS=best.totalAS;
-  const critFromGearRune=Math.min(best.gearLines*tierVals.CR,rules.caps.critFromGearRune);
-  const evaTotal=Math.min(best.gearLines*tierVals.EV,rules.caps.evaFromGearRune);
-  const drTotal=Math.min(best.gearLines*tierVals.DR,rules.caps.drFromGearRune);
+  // --- Attack Speed (gear + rune only) ---
+  const asGear = best.gearLines * tierVals.AS;
+  const asRune = best.rune * 0.01; // rune input is %
+  const totalAS = asGear + asRune;
+  const requiredAS = 1 - (best.finalInterval / (rules.baseInterval[best.tier][best.cls])); 
+  const asWaste = Math.max(totalAS - requiredAS, 0);
 
-  const html=`
+  // --- Crit Chance ---
+  const rawCrit = (best.critLines || 0) * tierVals.CR + (best.critRune || 0);
+  const critFromGearRune = Math.min(rawCrit, rules.caps.critFromGearRune);
+  const critWithPet = critFromGearRune + (best.critPet || 0);
+  const critWaste = Math.max(rawCrit - rules.caps.critFromGearRune, 0);
+
+  // --- Evasion ---
+  const rawEva = (best.evaLines || 0) * tierVals.EV + (best.evaRune || 0);
+  const evaTotal = Math.min(rawEva, rules.caps.evaFromGearRune);
+  const evaWaste = Math.max(rawEva - rules.caps.evaFromGearRune, 0);
+
+  // --- Output ---
+  const html = `
     <h3>Totals</h3>
-    <div>Attack Speed = ${(totalAS*100).toFixed(1)}%</div>
-    <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}%</div>
-    <div>Evasion = ${(evaTotal*100).toFixed(1)}%</div>
-    <div>DR% = ${(drTotal*100).toFixed(1)}%</div>
+    <div>Attack Speed (Gear+Rune) = ${(totalAS*100).toFixed(1)}% 
+      ${asWaste > 0 ? `(waste ${(asWaste*100).toFixed(1)}%)` : ''}</div>
+
+    <div>Crit Chance (Gear+Rune) = ${(critFromGearRune*100).toFixed(1)}% 
+      (with Pet ${(critWithPet*100).toFixed(1)}%) 
+      ${critWaste > 0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
+
+    <div>Evasion (Gear+Rune) = ${(evaTotal*100).toFixed(1)}% 
+      ${evaWaste > 0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
   `;
-  box.innerHTML=html;
+
+  box.innerHTML = html;
 }
