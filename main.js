@@ -1,5 +1,7 @@
-// Rediscover Optimizer v1 – brain
-// Handles input, loads rules, calculates AS/crit/eva caps, allocates lines.
+// ===========================
+// Rediscover Optimizer v2
+// ===========================
+// Slot-by-slot output version
 
 const els = {};
 window.addEventListener('DOMContentLoaded', async () => {
@@ -14,7 +16,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 
   const rules = await (await fetch('assets/gearRules.json')).json();
   els.runBtn.addEventListener('click', () => run(rules));
-  run(rules); // run once on load
+  run(rules);
 });
 
 function pctNum(el){ return Math.min(Math.max(+el.value || 0, -1), 5); }
@@ -67,53 +69,58 @@ function run(rules){
   const layout = {};
   for (const s of slots) layout[s] = [];
 
+  // 1. Weapon
   allocateWeapon(layout, focus);
 
-  // ATK SPD allocation
-  const maxASLines = slots.length - 1; // 7 non-weapon
-  const neededASLines = Math.min(maxASLines, Math.ceil(needFromEquip / line.AS));
+  // 2. Assign ATK SPD across slots until cap
   let asAccum = 0;
-  for (let i=0; i<neededASLines; i++){
-    const s = slots.filter(x => x !== "Weapon")[i];
-    layout[s].push('ATK SPD');
-    asAccum += line.AS;
+  const nonWeaponSlots = slots.filter(s => s !== "Weapon");
+  for (const s of nonWeaponSlots){
+    if (asAccum < needFromEquip){
+      layout[s].push("ATK SPD");
+      asAccum += line.AS;
+    }
   }
-  const asWaste = Math.max(0, asAccum - needFromEquip);
 
-  // Crit/Eva fill
-  const caps = rules.caps;
-  let critAccum = 0, evaAccum = 0;
-  for (const s of slots){
-    if (s === "Weapon") continue;
-    if (!layout[s].includes('ATK SPD') && critAccum < caps.critFromGearRune){
-      layout[s].push('Crit Chance');
+  // 3. Crit Chance until 50%
+  let critAccum = 0;
+  for (const s of nonWeaponSlots){
+    if (!layout[s].includes("ATK SPD") && critAccum < rules.caps.critFromGearRune){
+      layout[s].push("Crit Chance");
       critAccum += line.CR;
     }
   }
-  for (const s of slots){
-    if (s === "Weapon") continue;
-    if (!layout[s].includes('ATK SPD') && !layout[s].includes('Crit Chance') && evaAccum < caps.evaFromGearRune){
-      layout[s].push('Evasion');
+
+  // 4. Evasion until 40%
+  let evaAccum = 0;
+  for (const s of nonWeaponSlots){
+    if (!layout[s].includes("ATK SPD") &&
+        !layout[s].includes("Crit Chance") &&
+        evaAccum < rules.caps.evaFromGearRune){
+      layout[s].push("Evasion");
       evaAccum += line.EV;
     }
   }
 
-  // Fill remaining
-  const prio = rules.priority[focus];
-  for (const stat of prio){
-    if (['ATK SPD','Crit Chance','Evasion'].includes(stat)) continue;
-    for (const s of slots){
-      if (layout[s].length < 4 && !layout[s].includes(stat) && s !== "Weapon"){
-        layout[s].push(stat);
+  // 5. Fill remaining with DPS priorities
+  const filler = (focus === "DPS")
+    ? ["ATK%","Crit DMG","Monster DMG"]
+    : ["Evasion","HP%","DR%","DEF%","ATK%"];
+  for (const s of nonWeaponSlots){
+    while (layout[s].length < 4){
+      for (const f of filler){
+        if (layout[s].length < 4 && !layout[s].includes(f)){
+          layout[s].push(f);
+        }
       }
     }
   }
 
-  // Compute totals
+  // 6. Compute totals
   const totalAS = passiveAS + asAccum;
   const finalInterval = base * (1 - quicken) * fury * (1 - totalAS);
 
-  renderSummary({cls, focus, weap, base, target, totalAS, needAS, asWaste, finalInterval});
+  renderSummary({cls, focus, weap, base, target, totalAS, needAS, finalInterval});
   renderSlots(layout);
 }
 
@@ -128,11 +135,11 @@ function allocateWeapon(layout, focus){
 function renderSummary(d){
   const sum = document.getElementById('summary');
   sum.innerHTML = `
-    <div>Class: <b>${d.cls}</b> | Focus: <b>${d.focus}</b> | Tier: <b>${d.weap}</b></div>
-    <div>Base Interval: ${fmtSec(d.base)} | Target: ${fmtSec(d.target)}</div>
+    <div><b>${d.cls}</b> (${d.focus}) | Tier: ${d.weap}</div>
+    <div>Base Interval: ${fmtSec(d.base)} → Target: ${fmtSec(d.target)}</div>
     <div>Total AS: ${fmtPct(d.totalAS)} | Needed: ${fmtPct(d.needAS)}</div>
-    <div>Waste: ${fmtPct(d.asWaste)}</div>
-    <div>Projected final: ${fmtSec(d.finalInterval)}</div>
+    <div>Projected final interval: ${fmtSec(d.finalInterval)}</div>
+    <hr/>
   `;
 }
 
