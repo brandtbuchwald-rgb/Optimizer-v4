@@ -12,9 +12,14 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ---- Rules ----
-const rules = {
+ const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
-  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
+  caps: {
+    critFromGearRune: 0.50,
+    evaFromGearRune: 0.40,
+    drFromGearRune: 1.00,
+    critTotal: 1.00           // for “crit + pet” cap
+  },
   baseInterval: {
     Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
     Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
@@ -29,12 +34,12 @@ const rules = {
     Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
   },
   pets: {
-  None:{AS:0, CR:0},
-  B:{AS:0.08, CR:0.06},
-  A:{AS:0.10, CR:0.09},
-  S:{AS:0.12, CR:0.12}
-};
-
+    None:{AS:0.00, CR:0.00},
+    B:{AS:0.06, CR:0.06},
+    A:{AS:0.09, CR:0.09},
+    S:{AS:0.12, CR:0.12}
+  }
+}; // <-- this closing brace+semicolon was missing
 // ---- Helpers ----
 function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
 function fmtSec(s){ return s.toFixed(3) + 's'; }
