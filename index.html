@@ -72,31 +72,14 @@
 </div>
 
 <div class="row">
-  <label>Runes (ATK SPD %)</label>
-  <input id="rune" type="number" min="0" max="6" step="1" value="0">
-  <span class="hint">0–6%</span>
-</div>
-      <div class="row">
-  <label>Quicken Level</label>
-  <select id="quicken">
-    <option value="0">Lv 0</option>
-    <option value="1">Lv 1</option>
-    <option value="2">Lv 2</option>
-    <option value="3">Lv 3</option>
-    <option value="4">Lv 4</option>
-    <option value="5">Lv 5</option>
+  <label>Gear Tier</label>
+  <select id="gearTier">
+    <option value="Primal">Primal (12% lines)</option>
+    <option value="Chaos">Chaos (14% lines)</option>
+    <option value="Abyss">Abyss (16% lines)</option>
+    <option value="PvP/Boss">PvP/Boss</option>
   </select>
-  <span class="hint">Each level = 1% ATK SPD</span>
 </div>
-      <div class="row">
-        <label>Pet Gear</label>
-        <select id="pet">
-          <option value="0">None</option>
-          <option value="0.06">B (6% ATK SPD, 6% Crit)</option>
-          <option value="0.09">A (9% ATK SPD, 9% Crit)</option>
-          <option value="0.12">S (12% ATK SPD, 12% Crit)</option>
-        </select>
-      </div>
       <div class="row">
         <label>Target Interval</label>
         <input id="target" type="number" step="0.01" value="0.25">
