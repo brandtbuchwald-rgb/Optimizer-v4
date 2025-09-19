@@ -154,13 +154,16 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-  // Output
+  // Output slots
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
     div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
     box.appendChild(div);
   }
+
+  // Add totals panel at the end
+  renderTotals(best, layout);
 }
 function renderTotals(best, layout){
   const box = document.getElementById('slots');
