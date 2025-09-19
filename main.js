@@ -104,7 +104,7 @@ function renderCombo(cls,focus,tier,base,target,best){
       <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
       <li>Rune ${best.rune}%</li>
       <li>Pet ${best.petName} (${fmtPct(best.petAS)})</li>
-      <li>Quicken Lv ${best.quick} (${fmtPct(best.quick*0.01)})</li>
+     <li>Quicken Lv ${Math.round(best.quick)} (${fmtPct(best.quick*0.01)})</li>
     </ul>
     <div>= ${fmtPct(best.totalAS)} total → Cap reached at ${fmtSec(target)}</div>
     <div>Waste: ${fmtPct(best.waste)}</div>
