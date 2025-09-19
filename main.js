@@ -1,23 +1,40 @@
-
 // ==========================
-// Rediscover Optimizer v4 (Clean)
-// ==========================
-
-// ==========================
-// Rediscover Optimizer v4 (Clean)
+// Rediscover Optimizer v4 (Final Clean)
 // ==========================
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
   const q = id => document.getElementById(id);
-  ['cls','focus','gearTier','col','char','guild','secret','target','fury'
-  ].forEach(id => els[id] = q(id));
+  ['cls','focus','gearTier','col','char','guild','secret','target','fury']
+    .forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
   els.runBtn.addEventListener('click', () => run());
 });
 
 // ---- Rules ----
-// --- Core ---
+const rules = {
+  slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
+  caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
+  baseInterval: {
+    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2}
+  },
+  lineValues: {
+    Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
+    Original:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
+    Chaos:{AS:0.14, CR:0.15, EV:0.11, ATK:0.14, CD:40, MD:0.14, HP:0.16, DF:0.14, DR:0.11},
+    Abyss:{AS:0.16, CR:0.16, EV:0.12, ATK:0.16, CD:40, MD:0.16, HP:0.18, DF:0.16, DR:0.12}
+  },
+  pets: { None:0, B:0.08, A:0.10, S:0.12 }
+};
+
+// ---- Formatting helpers ----
+function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
+function fmtSec(s){ return s.toFixed(3) + 's'; }
+
+// ---- Core ----
 function run(){
   const cls    = els.cls.value;
   const focus  = els.focus.value;
@@ -31,14 +48,12 @@ function run(){
 
   const base = rules.baseInterval[tier][cls];
   const tierVals = rules.lineValues[tier];
-
-  // passive buffs (not included in gear totals)
   const passiveAS = statColor + charMod + guild + secret;
 
   let best = null;
   const petOptions = Object.entries(rules.pets);
 
-  // 1) Try combos WITHOUT quicken first
+  // 1) Try without quicken
   for (let rune=0; rune<=6; rune++){
     for (const [petName,petAS] of petOptions){
       for (let gearLines=0; gearLines<=8; gearLines++){
@@ -47,39 +62,31 @@ function run(){
         if (finalInterval <= target){
           const requiredAS = 1 - (target / base);
           const waste = totalAS - requiredAS;
-
-          if (!best ||
-              gearLines < best.gearLines ||
-              (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
-            best = {
-              gearLines,rune,quick:0,petName,petAS,totalAS,finalInterval,waste,
-              tierVals,critLines:0,evaLines:0,drLines:0
-            };
+          if (!best || gearLines < best.gearLines ||
+             (gearLines === best.gearLines && waste < best.waste - 1e-9)){
+            best = {gearLines,rune,quick:0,petName,petAS,totalAS,finalInterval,waste,
+                    tierVals,critLines:0,evaLines:0,drLines:0};
           }
         }
       }
     }
   }
 
-  // 2) If no valid combo, allow Quicken as last resort
+  // 2) If no valid combo, allow quicken (last resort)
   if (!best){
     for (let rune=0; rune<=6; rune++){
-      for (let quick=1; quick<=2; quick++){   // cap quicken at Lv2
+      for (let quick=1; quick<=2; quick++){ // only Lv1-2
         for (const [petName,petAS] of petOptions){
           for (let gearLines=0; gearLines<=8; gearLines++){
-            const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
+            const totalAS = passiveAS + rune*0.01 + petAS + quick*0.01 + gearLines*tierVals.AS;
             const finalInterval = base * (1 - totalAS) * fury;
             if (finalInterval <= target){
               const requiredAS = 1 - (target / base);
               const waste = totalAS - requiredAS;
-
-              if (!best ||
-                  gearLines < best.gearLines ||
-                  (gearLines === best.gearLines && waste < best.waste - 1e-9)) {
-                best = {
-                  gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,
-                  tierVals,critLines:0,evaLines:0,drLines:0
-                };
+              if (!best || gearLines < best.gearLines ||
+                 (gearLines === best.gearLines && waste < best.waste - 1e-9)){
+                best = {gearLines,rune,quick,petName,petAS,totalAS,finalInterval,waste,
+                        tierVals,critLines:0,evaLines:0,drLines:0};
               }
             }
           }
@@ -97,39 +104,26 @@ function run(){
   renderSlots(cls,focus,tier,best);
 }
 
-// --- Totals ---
-function renderTotals(best){
-  const box = document.getElementById('totals');
-  box.innerHTML = '';
-
-  // Gear+rune AS only
-  const asGear = best.gearLines * best.tierVals.AS;
-  const asRune = best.rune * 0.01;
-  const totalAS = asGear + asRune;
-
-  // Crit Chance gear+rune (cap 50%)
-  const critGearRune = Math.min(best.critLines * best.tierVals.CR, rules.caps.critFromGearRune);
-  const critWaste = (critGearRune > rules.caps.critFromGearRune) ? critGearRune - rules.caps.critFromGearRune : 0;
-
-  // Evasion gear+rune (cap 40%)
-  const evaGearRune = Math.min(best.evaLines * best.tierVals.EV, rules.caps.evaFromGearRune);
-  const evaWaste = (evaGearRune > rules.caps.evaFromGearRune) ? evaGearRune - rules.caps.evaFromGearRune : 0;
-
-  // DR gear+rune (cap 100%)
-  const drGearRune = Math.min(best.drLines * best.tierVals.DR, rules.caps.drFromGearRune);
-  const drWaste = (drGearRune > rules.caps.drFromGearRune) ? drGearRune - rules.caps.drFromGearRune : 0;
-
-  const html = `
-    <h3>Totals</h3>
-    <div>Attack Speed (gear+rune) = ${(totalAS*100).toFixed(1)}%</div>
-    <div>Crit Chance (gear+rune) = ${(critGearRune*100).toFixed(1)}% ${critWaste>0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>Evasion (gear+rune) = ${(evaGearRune*100).toFixed(1)}% ${evaWaste>0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>DR% (gear+rune) = ${(drGearRune*100).toFixed(1)}% ${drWaste>0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
+// ---- Combo Summary ----
+function renderCombo(cls,focus,tier,base,target,best){
+  const sum = document.getElementById('summary');
+  sum.innerHTML = `
+    <h3>Optimal Combo</h3>
+    <div>${cls} (${focus}) | Tier: ${tier}</div>
+    <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
+    <ul>
+      <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
+      <li>Rune ${best.rune}%</li>
+      <li>Pet ${best.petName} (${fmtPct(best.petAS)})</li>
+      ${best.quick>0 ? `<li>Quicken Lv ${best.quick} (${fmtPct(best.quick*0.01)}) <b>(last resort)</b></li>` : ''}
+    </ul>
+    <div>= ${fmtPct(best.totalAS)} total → Cap reached at ${fmtSec(target)}</div>
+    <div>Waste: ${fmtPct(best.waste)}</div>
+    <hr/>
   `;
-  box.innerHTML = html;
 }
 
-// --- Render slot-by-slot ---
+// ---- Slots ----
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -143,23 +137,19 @@ function renderSlots(cls,focus,tier,best){
   best.evaLines  = 0;
   best.drLines   = 0;
 
-  // ---- Weapon Rules ----
+  // Weapon rules
   if (focus === "DPS") {
-    if (tier === "Primal") {
-      layout['Weapon'] = ["Cast Demon Lord","ATK%","Crit DMG"];
-    } else {
-      layout['Weapon'] = ["Cast Demon Lord","ATK%","Crit DMG","Monster DMG"];
-    }
-  } else { // Tank
-    if (tier === "Primal") {
-      layout['Weapon'] = ["Cast Evasion","HP%","DEF%"];
-    } else {
-      layout['Weapon'] = ["Cast Evasion","HP%","DEF%","DR%"];
-      best.drLines += 1; // DR on tank weapon
-    }
+    layout['Weapon'] = tier==="Primal"
+      ? ["Cast Demon Lord","ATK%","Crit DMG"]
+      : ["Cast Demon Lord","ATK%","Crit DMG","Monster DMG"];
+  } else {
+    layout['Weapon'] = tier==="Primal"
+      ? ["Cast Evasion","HP%","DEF%"]
+      : ["Cast Evasion","HP%","DEF%","DR%"];
+    if (tier!=="Primal") best.drLines++;
   }
 
-  // ---- Assign ATK SPD lines ----
+  // ATK SPD lines
   let asLeft = best.gearLines;
   for (const s of rules.slots){
     if (s!=="Weapon" && asLeft>0){
@@ -168,65 +158,62 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-  // ---- Crit Chance until cap ----
+  // Crit Chance
   let critAccum = 0;
   for (const s of rules.slots){
-    if (s !== "Weapon" &&
+    if (s!=="Weapon" &&
         !layout[s].includes("ATK SPD") &&
         (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
       layout[s].push("Crit Chance");
       critAccum += tierVals.CR;
-      best.critLines += 1;
+      best.critLines++;
     }
   }
 
-  // ---- Evasion until cap ----
+  // Evasion
   let evaAccum = 0;
   for (const s of rules.slots){
-    if (s !== "Weapon" &&
+    if (s!=="Weapon" &&
         !layout[s].includes("ATK SPD") &&
         !layout[s].includes("Crit Chance") &&
         (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
       layout[s].push("Evasion");
       evaAccum += tierVals.EV;
-      best.evaLines += 1;
+      best.evaLines++;
     }
   }
 
-  // ---- DR% until 100% ----
+  // DR%
   let drAccum = 0;
   for (const s of rules.slots){
-    if (s !== "Weapon" &&
+    if (s!=="Weapon" &&
         drAccum + tierVals.DR <= rules.caps.drFromGearRune &&
         layout[s].length < 4){
       layout[s].push("DR%");
       drAccum += tierVals.DR;
-      best.drLines += 1;
+      best.drLines++;
     }
   }
 
-  // ---- Fill remaining ----
-  let filler;
-  if (focus==="DPS"){
-    filler = ["ATK%","Crit DMG","Monster DMG"];
-  } else {
-    filler = ["DR%","HP%","DEF%","ATK%","Crit Chance"];
-  }
+  // Fill remaining
+  let filler = (focus==="DPS")
+    ? ["ATK%","Crit DMG","Monster DMG"]
+    : ["DR%","HP%","DEF%","ATK%","Crit Chance"];
 
   for (const s of rules.slots){
-    while (layout[s].length < 4){
+    while(layout[s].length<4){
       for (const f of filler){
-        if (layout[s].length < 4 && !layout[s].includes(f)){
+        if(layout[s].length<4 && !layout[s].includes(f)){
           layout[s].push(f);
-          if (f==="Crit Chance") best.critLines += 1;
-          if (f==="Evasion") best.evaLines += 1;
-          if (f==="DR%") best.drLines += 1;
+          if(f==="Crit Chance") best.critLines++;
+          if(f==="Evasion") best.evaLines++;
+          if(f==="DR%") best.drLines++;
         }
       }
     }
   }
 
-  // ---- Output slot breakdown ----
+  // Render slots
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
@@ -234,6 +221,33 @@ function renderSlots(cls,focus,tier,best){
     box.appendChild(div);
   }
 
-  // ---- Totals panel ----
   renderTotals(best);
+}
+
+// ---- Totals ----
+function renderTotals(best){
+  const box = document.getElementById('totals');
+  box.innerHTML = '';
+
+  const asGear = best.gearLines * best.tierVals.AS;
+  const asRune = best.rune * 0.01;
+  const totalAS = asGear + asRune;
+
+  const critGearRune = Math.min(best.critLines * best.tierVals.CR, rules.caps.critFromGearRune);
+  const critWaste = Math.max(0, best.critLines * best.tierVals.CR - rules.caps.critFromGearRune);
+
+  const evaGearRune = Math.min(best.evaLines * best.tierVals.EV, rules.caps.evaFromGearRune);
+  const evaWaste = Math.max(0, best.evaLines * best.tierVals.EV - rules.caps.evaFromGearRune);
+
+  const drGearRune = Math.min(best.drLines * best.tierVals.DR, rules.caps.drFromGearRune);
+  const drWaste = Math.max(0, best.drLines * best.tierVals.DR - rules.caps.drFromGearRune);
+
+  const html = `
+    <h3>Totals</h3>
+    <div>Attack Speed (gear+rune) = ${(totalAS*100).toFixed(1)}%</div>
+    <div>Crit Chance (gear+rune) = ${(critGearRune*100).toFixed(1)}% ${critWaste>0?`(waste ${(critWaste*100).toFixed(1)}%)`:''}</div>
+    <div>Evasion (gear+rune) = ${(evaGearRune*100).toFixed(1)}% ${evaWaste>0?`(waste ${(evaWaste*100).toFixed(1)}%)`:''}</div>
+    <div>DR% (gear+rune) = ${(drGearRune*100).toFixed(1)}% ${drWaste>0?`(waste ${(drWaste*100).toFixed(1)}%)`:''}</div>
+  `;
+  box.innerHTML = html;
 }
