@@ -237,7 +237,15 @@ function renderTotals(best, tierVals) {
   const asRune   = best.rune * 0.01;
   const asPet    = best.petAS;
   const asQuick  = best.quick * 0.01;
-  const totalAS  = asGear + asRune + asPet + asQuick;
+  let totalAS    = asGear + asRune + asPet + asQuick;
+
+  // cap = how much AS was actually needed
+  const requiredAS = 1 - (best.finalInterval / (rules.baseInterval[best.tier][best.cls]));  
+  let asWaste = 0;
+  if (totalAS > requiredAS) {
+    asWaste = totalAS - requiredAS;
+    totalAS = requiredAS;
+  }
 
   // --- Crit Chance ---
   let critFromGearRune = best.critLines * tierVals.CR;
@@ -274,7 +282,7 @@ function renderTotals(best, tierVals) {
   // --- HTML output ---
   const html = `
     <h3>Totals</h3>
-    <div>Attack Speed = ${(totalAS*100).toFixed(1)}%</div>
+    <div>Attack Speed = ${(totalAS*100).toFixed(1)}% ${asWaste > 0 ? `(waste ${(asWaste*100).toFixed(1)}%)` : ''}</div>
     <div>Crit Chance = ${(critFromGearRune*100).toFixed(1)}% (Pet ${(critWithPet*100).toFixed(1)}%) 
       ${critWaste > 0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
     <div>Evasion = ${(evaTotal*100).toFixed(1)}% ${evaWaste > 0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
