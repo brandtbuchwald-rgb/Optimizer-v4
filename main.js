@@ -164,7 +164,6 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
   `;
 }
 
-// ---- Slots ----
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -251,6 +250,19 @@ function renderSlots(cls,focus,tier,best){
           if(f==="Crit Chance") best.critLines++;
           if(f==="Evasion") best.evaLines++;
           if(f==="DR%") best.drLines++;
+        }
+      }
+    }
+  }
+
+  // Add purple 5th lines if Chaos/Abyss
+  if (tier==="Chaos" || tier==="Abyss"){
+    for (const s of rules.slots){
+      if (s !== "Weapon" && rules.purple5th[s]){
+        for (const purple of rules.purple5th[s]){
+          if (!layout[s].includes(purple)){
+            layout[s].push(purple); // extra purple line
+          }
         }
       }
     }
