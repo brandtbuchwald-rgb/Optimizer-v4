@@ -1,11 +1,11 @@
 // ==========================
-// Rediscover Optimizer v4 (Final Clean)
+// Rediscover Optimizer v4 (Final Clean, Dual Selectors)
 // ==========================
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
   const q = id => document.getElementById(id);
-  ['cls','focus','gearTier','col','char','guild','secret','target','fury']
+  ['cls','focus','weap','gearTier','col','char','guild','secret','target','fury']
     .forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
   els.runBtn.addEventListener('click', () => run());
@@ -16,10 +16,11 @@ const rules = {
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
   caps: { critFromGearRune: 0.50, evaFromGearRune: 0.40, drFromGearRune: 1.00 },
   baseInterval: {
-    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
     Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Primal:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
     Chaos:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
-    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2}
+    Abyss:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
   },
   lineValues: {
     Primal:{AS:0.12, CR:0.14, EV:0.10, ATK:0.12, CD:40, MD:0.12, HP:0.14, DF:0.12, DR:0.10},
@@ -30,7 +31,7 @@ const rules = {
   pets: { None:0, B:0.08, A:0.10, S:0.12 }
 };
 
-// ---- Formatting helpers ----
+// ---- Helpers ----
 function fmtPct(p){ return (p*100).toFixed(1) + '%'; }
 function fmtSec(s){ return s.toFixed(3) + 's'; }
 
@@ -38,7 +39,8 @@ function fmtSec(s){ return s.toFixed(3) + 's'; }
 function run(){
   const cls    = els.cls.value;
   const focus  = els.focus.value;
-  const tier   = els.gearTier.value;
+  const weap   = els.weap.value;       // weapon type (Original / Primal / Chaos / Abyss / PvP/Boss)
+  const tier   = els.gearTier.value;   // gear tier (Primal / Original / Chaos / Abyss)
   const statColor = +els.col.value;
   const charMod   = +els.char.value;
   const guild     = (+els.guild.value||0)/100;
@@ -46,8 +48,8 @@ function run(){
   const target    = +els.target.value || 0.25;
   const fury      = (els.fury.checked && cls === 'Berserker') ? 1.25 : 1.0;
 
-  const base = rules.baseInterval[tier][cls];
-  const tierVals = rules.lineValues[tier];
+  const base = rules.baseInterval[weap][cls];   // weapon sets base interval
+  const tierVals = rules.lineValues[tier];      // gear tier sets line values
   const passiveAS = statColor + charMod + guild + secret;
 
   let best = null;
@@ -100,16 +102,16 @@ function run(){
     return;
   }
 
-  renderCombo(cls,focus,tier,base,target,best);
+  renderCombo(cls,focus,weap,tier,base,target,best);
   renderSlots(cls,focus,tier,best);
 }
 
 // ---- Combo Summary ----
-function renderCombo(cls,focus,tier,base,target,best){
+function renderCombo(cls,focus,weap,tier,base,target,best){
   const sum = document.getElementById('summary');
   sum.innerHTML = `
     <h3>Optimal Combo</h3>
-    <div>${cls} (${focus}) | Tier: ${tier}</div>
+    <div>${cls} (${focus}) | Weapon: ${weap}, Gear: ${tier}</div>
     <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
     <ul>
       <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
