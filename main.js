@@ -65,7 +65,7 @@ function run(){
 const petOptions = Object.entries(rules.pets);
 
 for (let rune=0; rune<=6; rune++){
-  for (let quick=0; quick<=5; quick++){
+  for (let quick=0; quick<=2; quick++){
     for (const [petName,petAS] of petOptions){
       for (let gearLines=0; gearLines<=8; gearLines++){
         const totalAS = passiveAS + rune*0.01 + quick*0.01 + petAS + gearLines*tierVals.AS;
