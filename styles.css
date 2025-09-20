@@ -102,3 +102,18 @@ button:hover {
   color: #b26bff;
   font-weight: bold;
 }
+.purple-stat {
+  color: #b47cff; /* bright purple */
+  font-weight: 600;
+}
+#slots {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.slot {
+  background: #1e1e1e;
+  padding: 10px;
+  border-radius: 6px;
+}
