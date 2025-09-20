@@ -43,16 +43,16 @@ const rules = {
 
   // Purple (5th) rules per slot
   purple5thLabels: {
-    Necklace: "Crit DMG ",
-    Ring:     "Crit DMG ",
-    Helm:     "Boss DMG / HP%",
-    Belt:     "Boss DMG / HP% ",
-    WeaponDPS: "Crit DMG (80%)",
-    WeaponTank: "HP% (52%)",
-    Chest:   "ATK%",
-    Gloves:  "ATK% ",
-    Boots:   "ATK% "
-  },
+  Necklace: "Crit DMG",
+  Ring:     "Crit DMG",
+  Helm:     "Boss DMG / HP%",
+  Belt:     "Boss DMG / HP%",
+  WeaponDPS: "Crit DMG",
+  WeaponTank: "HP%",
+  Chest:   "ATK%",
+  Gloves:  "ATK%",
+  Boots:   "ATK%"
+}
 
   // Pet options
   pets: {
@@ -202,7 +202,8 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 function renderSlots(cls, focus, tier, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
-
+const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion","DR%"]);
+function slotHasAnyCap(arr){ return arr.some(s => CAP_STATS.has(s)); }
   const t = best.tierVals;
   const layout = {};
   for (const s of rules.slots) layout[s] = [];
@@ -210,10 +211,13 @@ function renderSlots(cls, focus, tier, best) {
   const isChaosAbyss = (tier === "Chaos" || tier === "Abyss");
   const capPerSlot = slot => isChaosAbyss ? 5 : 4;
 
-  const canAdd = (slot, stat) =>
-    layout[slot].length < capPerSlot(slot) && !layout[slot].includes(stat);
-
-  // 🔮 5th stat at the TOP (Chaos/Abyss only)
+  const canAdd = (slot, stat) => {
+  if (layout[slot].length >= capPerSlot(slot)) return false;
+  if (layout[slot].includes(stat)) return false;
+  // enforce max one cap stat per item
+  if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) return false;
+  return true;
+};  // 🔮 5th stat at the TOP (Chaos/Abyss only)
   if (isChaosAbyss) {
     layout['Weapon'].push(
       focus === "DPS"
