@@ -65,12 +65,12 @@ const rules = {
 
   // Weapon stat pools (no AS/CR/EV on weapons)
   // Note: Cast values differ by Chaos/Abyss vs others
-  weaponPool: {
-    common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"],
-    castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
-    castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
-  }
-}; // 👈 closes the rules object properly
+  // Weapon stat pools (no AS/CR/EV on weapons)
+weaponPool: {
+  common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"], // ✅ DR% not "Damage Reduction"
+  castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
+  castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
+},
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
@@ -242,8 +242,8 @@ function slotHasAnyCap(arr){ return arr.some(s => CAP_STATS.has(s)); }
   if (canAdd('Weapon', castLabel)) layout['Weapon'].push(castLabel);
 
   const weaponFillPriority = (focus==="DPS")
-    ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","Damage Reduction"]
-    : ["HP%","DEF%","Damage Reduction","ATK%","Crit DMG","Monster DMG"];
+    ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"]
+    : ["HP%","DEF%","DR%","ATK%","Crit DMG","Monster DMG"];
 
   for (const stat of weaponFillPriority) {
     if (canAdd('Weapon', stat)) layout['Weapon'].push(stat);
