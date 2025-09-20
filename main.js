@@ -118,26 +118,60 @@ function run(){
   renderTotals(focus, tier, best);
 }
 
-// ---------- Slot rendering ----------
+// ---------- Summary ----------
+function renderCombo(cls,focus,weap,tier,base,target,best){
+  const sum = document.getElementById('summary');
+  sum.innerHTML = `
+    <h3>Optimal Combo</h3>
+    <div>${cls} (${focus}) | Weapon: ${weap} | Gear: ${tier}</div>
+    <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
+    <ul>
+      <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each</li>
+      <li>Rune ${best.rune}%</li>
+      <li>Pet ${best.petName} (AS ${fmtPct(best.petAS)}, Crit ${fmtPct(best.critPet||0)})</li>
+    </ul>
+    <div>Total AS = ${fmtPct(best.totalAS)} → Cap reached</div>
+    <hr/>
+  `;
+}
+
+// ---------- Slots ----------
 function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
   box.innerHTML = '';
 
   const t = best.tierVals;
+  const isCA = (tier==="Chaos"||tier==="Abyss");
+
   const valueMap = {
     "ATK%": t.ATK, "Crit DMG": t.CD, "Monster DMG": t.MD,
     "HP%": t.HP, "DEF%": t.DF, "Evasion": t.EV,
     "Crit Chance": t.CR, "ATK SPD": t.AS, "DR%": t.DR
   };
-  const statLabel = stat => {
-    if (valueMap[stat]) return `${stat} +${(valueMap[stat]*100).toFixed(0)}%`;
-    return stat;
-  };
+  const statLabel = stat => valueMap[stat] ? `${stat} +${(valueMap[stat]*100).toFixed(0)}%` : stat;
 
   const layout = {};
   for (const s of rules.slots) layout[s] = [];
 
-  // Assign ATK SPD lines from optimizer output
+  // Purples
+  if (isCA){
+    layout['Weapon'].push(focus==="DPS" ? rules.purple5thLabels.WeaponDPS : rules.purple5thLabels.WeaponTank);
+    layout['Necklace'].push(rules.purple5thLabels.Necklace);
+    layout['Ring'].push(rules.purple5thLabels.Ring);
+    layout['Helm'].push(rules.purple5thLabels.Helm);
+    layout['Belt'].push(rules.purple5thLabels.Belt);
+    layout['Chest'].push(rules.purple5thLabels.Chest);
+    layout['Gloves'].push(rules.purple5thLabels.Gloves);
+    layout['Boots'].push(rules.purple5thLabels.Boots);
+  }
+
+  // Weapon baseline
+  const cast = (focus==="DPS")
+    ? (isCA ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
+    : (isCA ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
+  layout['Weapon'].push(cast);
+
+  // Assign ATK SPD
   let asLeft = best.gearLines;
   for (const s of rules.slots){
     if (s!=="Weapon" && asLeft>0){
@@ -146,9 +180,9 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-  // Priorities
+  // Fill priorities
   let critAccum=0, evaAccum=0, drAccum=0;
-  const add = (slot, stat) => {
+  const add = (slot,stat)=>{
     layout[slot].push(stat);
     if (stat==="Crit Chance") best.critLines++;
     if (stat==="Evasion")     best.evaLines++;
@@ -171,7 +205,7 @@ function renderSlots(cls,focus,tier,best){
                   (stat==="Evasion"     && evaAccum+ t.EV>rules.caps.evaFromGearRune)  ||
                   (stat==="DR%"         && drAccum + t.DR>rules.caps.drFromGearRune);
       if (cap) continue;
-      if (layout[slot].length<((tier==="Chaos"||tier==="Abyss")?5:4)){
+      if (layout[slot].length<((isCA)?5:4)){
         add(slot,stat);
         if (stat==="Crit Chance") critAccum+=t.CR;
         if (stat==="Evasion")     evaAccum+=t.EV;
@@ -190,7 +224,7 @@ function renderSlots(cls,focus,tier,best){
 }
 
 // ---------- Totals ----------
-function renderTotals(focus, tier, best){
+function renderTotals(focus,tier,best){
   const box = document.getElementById('totals');
   const t = best.tierVals;
 
