@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Rules-Accurate (with 5th values, cap restriction, weapon fill)
+// Rediscover Optimizer v4 — Corrected
 // ==========================
 
 const els = {};
@@ -23,14 +23,14 @@ const rules = {
     "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
   },
   lineValues: {
-    Primal:   {AS:0.12,CR:0.12,EV:0.12,ATK:0.23,CD:0.35,MD:0.35,HP:0.23,DF:0.23,DR:0.14},
-    Original: {AS:0.12,CR:0.12,EV:0.12,ATK:0.23,CD:0.35,MD:0.35,HP:0.23,DF:0.23,DR:0.17},
-    Chaos:    {AS:0.14,CR:0.14,EV:0.14,ATK:0.26,CD:0.40,MD:0.40,HP:0.26,DF:0.26,DR:0.19},
-    Abyss:    {AS:0.16,CR:0.16,EV:0.16,ATK:0.29,CD:0.45,MD:0.45,HP:0.29,DF:0.29,DR:0.21}
+    Primal:   {AS:0.12,CR:0.12,EV:0.12,ATK:0.23,CD:0.35,MD:0.35,BD:0.35,HP:0.23,DF:0.23,DR:0.14},
+    Original: {AS:0.12,CR:0.12,EV:0.12,ATK:0.23,CD:0.35,MD:0.35,BD:0.35,HP:0.23,DF:0.23,DR:0.17},
+    Chaos:    {AS:0.14,CR:0.14,EV:0.14,ATK:0.26,CD:0.40,MD:0.40,BD:0.40,HP:0.26,DF:0.26,DR:0.19},
+    Abyss:    {AS:0.16,CR:0.16,EV:0.16,ATK:0.29,CD:0.45,MD:0.45,BD:0.45,HP:0.29,DF:0.29,DR:0.21}
   },
   pets: { None:{AS:0,CR:0}, B:{AS:0.06,CR:0.06}, A:{AS:0.09,CR:0.09}, S:{AS:0.12,CR:0.12} },
   weaponPool: {
-    common:["ATK%","Crit DMG","DEF%","HP%","Damage Reduction","Monster DMG"],
+    common:["ATK%","Crit DMG","Racial DMG","HP%","Damage Reduction","DEF%"],
     castDPS:{chaosAbyss:"Cast Demon Lord (19%)",normal:"Cast Demon Lord (17%)"},
     castTank:{chaosAbyss:"Cast Evasion (19%)",normal:"Cast Evasion (17%)"}
   }
@@ -53,7 +53,7 @@ function run(){
   let best=null;
   const pets=Object.entries(rules.pets);
 
-  // Pass 1: no Quicken
+  // Pass 1
   for(let rune=0;rune<=6;rune++){
     for(const [petName,petStats] of pets){
       for(let gearLines=0;gearLines<=8;gearLines++){
@@ -64,14 +64,14 @@ function run(){
           if(!best||gearLines<best.gearLines||(gearLines===best.gearLines&&waste<best.waste)){
             best={gearLines,rune,quick:0,petName,petAS:petStats.AS,critPet:petStats.CR,
                   totalAS,finalInterval:interval,waste,tierVals:tVals,
-                  critLines:0,evaLines:0,drLines:0,atkLines:0,cdLines:0,mdLines:0,hpLines:0,dfLines:0};
+                  critLines:0,evaLines:0,drLines:0,atkLines:0,cdLines:0,mdLines:0,bdLines:0,hpLines:0,dfLines:0};
           }
         }
       }
     }
   }
 
-  // Pass 2: allow Quicken 1–2
+  // Pass 2: Quicken
   if(!best){
     for(let rune=0;rune<=6;rune++){
       for(let quick=1;quick<=2;quick++){
@@ -84,7 +84,7 @@ function run(){
               if(!best||gearLines<best.gearLines||(gearLines===best.gearLines&&waste<best.waste)){
                 best={gearLines,rune,quick,petName,petAS:petStats.AS,critPet:petStats.CR,
                       totalAS,finalInterval:interval,waste,tierVals:tVals,
-                      critLines:0,evaLines:0,drLines:0,atkLines:0,cdLines:0,mdLines:0,hpLines:0,dfLines:0};
+                      critLines:0,evaLines:0,drLines:0,atkLines:0,cdLines:0,mdLines:0,bdLines:0,hpLines:0,dfLines:0};
               }
             }
           }
@@ -98,29 +98,12 @@ function run(){
   renderTotals(focus,tier,best);
 }
 
-// ---------- Summary ----------
-function renderCombo(cls,focus,weap,tier,base,target,best){
-  document.getElementById('summary').innerHTML=`
-    <h3>Optimal Combo</h3>
-    <div>${cls} (${focus}) | Weapon: ${weap} | Gear: ${tier}</div>
-    <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
-    <ul>
-      <li>${best.gearLines} ATK SPD line(s)</li>
-      <li>Rune ${best.rune}%</li>
-      <li>Pet ${best.petName} (AS ${fmtPct(best.petAS)}, Crit ${fmtPct(best.critPet||0)})</li>
-      ${best.quick?`<li>Quicken Lv ${best.quick} (${fmtPct(best.quick*0.01)})</li>`:""}
-    </ul>
-    <div>Total AS = ${fmtPct(best.totalAS)} → Interval ${fmtSec(best.finalInterval)}</div>
-    <hr/>
-  `;
-}
-
 // ---------- Slots ----------
 function renderSlots(cls,focus,tier,best){
   const box=document.getElementById('slots'); box.innerHTML='';
   const t=best.tierVals, isCA=(tier==="Chaos"||tier==="Abyss");
-  const valMap={"ATK%":t.ATK,"Crit DMG":t.CD,"Monster DMG":t.MD,"HP%":t.HP,"DEF%":t.DF,
-                "Evasion":t.EV,"Crit Chance":t.CR,"ATK SPD":t.AS,"DR%":t.DR};
+  const valMap={"ATK%":t.ATK,"Crit DMG":t.CD,"Racial DMG":t.MD,"Boss DMG":t.BD,
+                "HP%":t.HP,"DEF%":t.DF,"Evasion":t.EV,"Crit Chance":t.CR,"ATK SPD":t.AS,"DR%":t.DR};
   const statLabel=s=>valMap[s]?`${s} +${(valMap[s]*100).toFixed(0)}%`:s;
 
   const layout={}; for(const s of rules.slots) layout[s]=[];
@@ -130,14 +113,14 @@ function renderSlots(cls,focus,tier,best){
     layout['Weapon'].push(focus==="DPS" ? "Crit DMG +80" : "HP% +52%");
     layout['Necklace'].push(statLabel("Crit DMG"));
     layout['Ring'].push(statLabel("Crit DMG"));
-    layout['Helm'].push("Boss DMG +??% / "+statLabel("HP%"));
-    layout['Belt'].push("Boss DMG +??% / "+statLabel("HP%"));
+    layout['Helm'].push(statLabel("Boss DMG")+" / "+statLabel("HP%"));
+    layout['Belt'].push(statLabel("Boss DMG")+" / "+statLabel("HP%"));
     layout['Chest'].push(statLabel("ATK%"));
     layout['Gloves'].push(statLabel("ATK%"));
     layout['Boots'].push(statLabel("ATK%"));
   }
 
-  // Weapon: add Cast + fill remaining with common pool
+  // Weapon fill
   const cap=isCA?5:4;
   const cast=(focus==="DPS")?(isCA?rules.weaponPool.castDPS.chaosAbyss:rules.weaponPool.castDPS.normal)
                             :(isCA?rules.weaponPool.castTank.chaosAbyss:rules.weaponPool.castTank.normal);
@@ -148,21 +131,25 @@ function renderSlots(cls,focus,tier,best){
 
   // Assign AS
   let asLeft=best.gearLines;
-  for(const s of rules.slots){ if(s!=="Weapon"&&asLeft>0){ layout[s].push(statLabel("ATK SPD")); asLeft--; } }
+  for(const s of rules.slots){ 
+    if(s!=="Weapon"&&asLeft>0){ layout[s].push(statLabel("ATK SPD")); asLeft--; } 
+  }
 
   // Fill
   let crit=0,eva=0,dr=0;
-  const add=(slot,stat)=>{layout[slot].push(statLabel(stat));
+  const add=(slot,stat)=>{
+    layout[slot].push(statLabel(stat));
     if(stat==="Crit Chance")best.critLines++;
     if(stat==="Evasion")best.evaLines++;
     if(stat==="DR%")best.drLines++;
     if(stat==="ATK%")best.atkLines++;
     if(stat==="Crit DMG")best.cdLines++;
-    if(stat==="Monster DMG")best.mdLines++;
+    if(stat==="Racial DMG")best.mdLines++;
+    if(stat==="Boss DMG")best.bdLines++;
     if(stat==="HP%")best.hpLines++;
     if(stat==="DEF%")best.dfLines++;
   };
-  const orderDPS=["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"];
+  const orderDPS=["Crit Chance","Evasion","ATK%","Crit DMG","Racial DMG","HP%","DEF%"];
   const orderTank=["Evasion","DR%","Crit Chance","HP%","DEF%","ATK%","Crit DMG"];
 
   for(const slot of rules.slots){
@@ -173,9 +160,8 @@ function renderSlots(cls,focus,tier,best){
                  (stat==="Evasion"&&eva+t.EV>rules.caps.evaFromGearRune)||
                  (stat==="DR%"&&dr+t.DR>rules.caps.drFromGearRune);
       if(over)continue;
-      // prevent >1 cap stat per slot
-      if(["Crit Chance","Evasion","DR%"].includes(stat) &&
-         layout[slot].some(s=>s.includes("Crit Chance")||s.includes("Evasion")||s.includes("DR%"))) continue;
+      // only one cap per slot (Crit/Eva/DR/AS)
+      if(["Crit Chance","Evasion","DR%","ATK SPD"].some(capStat=>layout[slot].some(s=>s.includes(capStat)))) continue;
       if(layout[slot].length<capPer){
         add(slot,stat);
         if(stat==="Crit Chance")crit+=t.CR;
@@ -196,20 +182,30 @@ function renderSlots(cls,focus,tier,best){
 // ---------- Totals ----------
 function renderTotals(focus,tier,best){
   const box=document.getElementById('totals'),t=best.tierVals;
-  const atk=(best.atkLines*t.ATK)*100, cd=(best.cdLines*t.CD).toFixed(2),
-        md=(best.mdLines*t.MD)*100, hp=(best.hpLines*t.HP)*100, df=(best.dfLines*t.DF)*100,
-        eva=(best.evaLines*t.EV)*100, dr=(best.drLines*t.DR)*100, crit=(best.critLines*t.CR)*100;
+  const atk=(best.atkLines*t.ATK)*100, 
+        cd=(best.cdLines*t.CD+ (best._isChaosAbyss&&focus==="DPS"?0.80:0))*100,
+        md=(best.mdLines*t.MD)*100, 
+        bd=(best.bdLines*t.BD)*100,
+        hp=(best.hpLines*t.HP+(best._isChaosAbyss&&focus==="Tank"?0.52:0))*100, 
+        df=(best.dfLines*t.DF)*100,
+        eva=(best.evaLines*t.EV)*100, 
+        dr=(best.drLines*t.DR)*100, 
+        crit=(best.critLines*t.CR)*100;
+
+  const asGear=best.gearLines*t.AS, asRune=best.rune*0.01;
+  const asTotal=(asGear+asRune)*100;
+
   box.innerHTML=`
     <h3>Equipment Stats</h3>
-    <div>Attack Speed = ${(best.totalAS*100).toFixed(1)}%</div>
+    <div>Attack Speed = ${asTotal.toFixed(1)}%</div>
     <div>Attack = ${atk.toFixed(0)}%</div>
     <div>Crit Chance = ${crit.toFixed(0)}%</div>
     <div>Crit Chance + Pet = ${((crit/100)+(best.critPet||0))*100}%</div>
-    <div>Crit Damage = ${cd}</div>
+    <div>Crit Damage = ${cd.toFixed(0)}%</div>
     <div>Evasion = ${eva.toFixed(0)}%</div>
     <div>DR% = ${dr.toFixed(0)}%</div>
     <div>HP% = ${hp.toFixed(0)}%</div>
     <div>DEF% = ${df.toFixed(0)}%</div>
-    <div>Monster DMG = ${md.toFixed(0)}%</div>
-    <div>Boss DMG = shown as choice (Helm/Belt)</div>`;
+    <div>Racial DMG = ${md.toFixed(0)}%</div>
+    <div>Boss DMG = ${bd.toFixed(0)}%</div>`;
 }
