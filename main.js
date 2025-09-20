@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Corrected
+// Rediscover Optimizer v4 — Corrected & Stable
 // ==========================
 
 const els = {};
@@ -99,7 +99,6 @@ function run(){
 }
 
 // ---------- Slots ----------
-// ---------- Slots ----------
 function renderSlots(cls,focus,tier,best){
   const box=document.getElementById('slots'); box.innerHTML='';
   const t=best.tierVals, isCA=(tier==="Chaos"||tier==="Abyss");
@@ -136,7 +135,7 @@ function renderSlots(cls,focus,tier,best){
     if(s!=="Weapon"&&asLeft>0){ layout[s].push(statLabel("ATK SPD")); asLeft--; } 
   }
 
-  // Fill
+  // Fill priorities
   let crit=0,eva=0,dr=0;
   const add=(slot,stat)=>{
     layout[slot].push(statLabel(stat));
@@ -172,10 +171,11 @@ function renderSlots(cls,focus,tier,best){
     }
   }
 
-    // Before rendering:
+  // Track tier/focus for totals
   best._isChaosAbyss = isCA;
   best._focus = focus;
 
+  // Render
   for(const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div'); div.className='slot';
     div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
