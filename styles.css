@@ -97,3 +97,8 @@ button:hover {
     grid-template-columns: 1fr; /* stack slot columns on narrow screens */
   }
 }
+/* Purple styling for 5th stat lines */
+.slot div .purple-stat {
+  color: #b26bff;
+  font-weight: bold;
+}
