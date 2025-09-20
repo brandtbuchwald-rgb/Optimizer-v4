@@ -363,24 +363,25 @@ function renderTotals(focus, tier, best){
   const t = best.tierVals;
   const isChaosAbyss = (tier==="Chaos" || tier==="Abyss");
 
-  // Base line totals
-  let atkSpd = best.gearLines * t.AS + best.rune * 0.01;
-  let crit   = best.critLines * t.CR;
-  let eva    = best.evaLines  * t.EV;
-  let dr     = best.drLines   * t.DR;
-  let atk    = best.atkLines  * t.ATK;
-  let cd     = best.cdLines   * t.CD;
-  let md     = best.mdLines   * t.MD;
-  let hp     = best.hpLines   * t.HP;
-  let df     = best.dfLines   * t.DF;
+ // Base line totals
+let atkSpd = best.gearLines * t.AS + best.rune * 0.01; // ✅ include rune
+let crit   = best.critLines * t.CR;
+let eva    = best.evaLines  * t.EV;
+let dr     = best.drLines   * t.DR;
+let atk    = best.atkLines  * t.ATK;
+let cd     = best.cdLines   * t.CD;
+let md     = best.mdLines   * t.MD;
+let hp     = best.hpLines   * t.HP;
+let df     = best.dfLines   * t.DF;
 
-  // Add purple contributions
-  if (isChaosAbyss) {
-  atk += 3 * t.ATK; // Chest, Gloves, Boots purples
-  cd  += 2 * t.CD;  // Necklace, Ring purples
-  cd  += t.CD;      // Weapon purple (DPS)
-  hp  += 2 * t.HP;  // Helm + Belt purples
-  if (focus === "Tank") hp += t.HP; // Tank weapon purple is HP%
+// Add purple contributions
+if (isChaosAbyss) {
+  atk += 3 * t.ATK; // Chest, Gloves, Boots
+  cd  += 2 * t.CD;  // Necklace + Ring
+  cd  += t.CD;      // Weapon DPS purple
+  if (best._focus === "Tank") hp += t.HP; // ✅ Tank weapon purple adds HP
+  // helm/belt purple = Boss DMG or HP, HP included if chosen
+  hp += 2 * t.HP; // ✅ count helm + belt HP% option
 }
   // Render totals
   box.innerHTML = `
