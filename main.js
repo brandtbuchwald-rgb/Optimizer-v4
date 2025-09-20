@@ -357,7 +357,8 @@ function slotHasAnyCap(arr){ return arr.some(s => CAP_STATS.has(s)); }
     const div = document.createElement('div');
     div.className = 'slot';
     div.innerHTML = `<h3>${slot}</h3>` + stats.map(s => {
-      const isPurple = (typeof s === 'string' && s.includes('purple-stat'));
+      div.innerHTML = `<h3>${slot}</h3>` 
+  + stats.map(s => `<div>- ${statWithValue(s, t)}</div>`).join('');
       return isPurple ? `<div>- ${s}</div>` : `<div>- ${s} +${(t[s] * 100).toFixed(0)}%</div>`;
     }).join('');
     box.appendChild(div);
