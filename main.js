@@ -181,6 +181,7 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots (strict per PDF) ----------
+// ---------- Slots (strict per PDF) ----------
 function renderSlots(cls, focus, tier, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -195,41 +196,21 @@ function renderSlots(cls, focus, tier, best) {
   const canAdd = (slot, stat) =>
     layout[slot].length < capPerSlot(slot) && !layout[slot].includes(stat);
 
-  // Map stat → value for this tier
-  const valMap = {
-    "ATK SPD": t.AS,
-    "Crit Chance": t.CR,
-    "Evasion": t.EV,
-    "ATK%": t.ATK,
-    "Crit DMG": t.CD,
-    "Monster DMG": t.MD,
-    "Boss DMG": t.BD,
-    "HP%": t.HP,
-    "DEF%": t.DF,
-    "DR%": t.DR
-  };
-
-  // render helpers
-  const statLabel = stat => `${stat} +${(valMap[stat] * 100).toFixed(0)}%`;
-  const purpleLabel = stat => `<span class="purple-stat">${statLabel(stat)}</span>`;
-
-  // 🔮 Add 5th stats for Chaos/Abyss
+  // 🔮 5th stat at the TOP (Chaos/Abyss only)
   if (isChaosAbyss) {
     layout['Weapon'].push(
       focus === "DPS"
-        ? purpleLabel(rules.purple5thLabels.WeaponDPS)
-        : purpleLabel(rules.purple5thLabels.WeaponTank)
+        ? purple(rules.purple5thLabels.WeaponDPS)
+        : purple(rules.purple5thLabels.WeaponTank)
     );
-    layout['Necklace'].push(purpleLabel(rules.purple5thLabels.Necklace));
-    layout['Ring'].push(purpleLabel(rules.purple5thLabels.Ring));
-    layout['Helm'].push(purpleLabel(rules.purple5thLabels.Helm));
-    layout['Belt'].push(purpleLabel(rules.purple5thLabels.Belt));
-    layout['Chest'].push(purpleLabel(rules.purple5thLabels.Chest));
-    layout['Gloves'].push(purpleLabel(rules.purple5thLabels.Gloves));
-    layout['Boots'].push(purpleLabel(rules.purple5thLabels.Boots));
+    layout['Necklace'].push(purple(rules.purple5thLabels.Necklace));
+    layout['Ring'].push(purple(rules.purple5thLabels.Ring));
+    layout['Helm'].push(purple(rules.purple5thLabels.Helm));
+    layout['Belt'].push(purple(rules.purple5thLabels.Belt));
+    layout['Chest'].push(purple(rules.purple5thLabels.Chest));
+    layout['Gloves'].push(purple(rules.purple5thLabels.Gloves));
+    layout['Boots'].push(purple(rules.purple5thLabels.Boots));
   }
-
-  // 🟢 Existing logic (modified to use statLabel)
 
   // Weapon pool setup
   const castLabel = (focus==="DPS")
@@ -239,11 +220,11 @@ function renderSlots(cls, focus, tier, best) {
   if (canAdd('Weapon', castLabel)) layout['Weapon'].push(castLabel);
 
   const weaponFillPriority = (focus==="DPS")
-    ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"]
-    : ["HP%","DEF%","DR%","ATK%","Crit DMG","Monster DMG"];
+    ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","Damage Reduction"]
+    : ["HP%","DEF%","Damage Reduction","ATK%","Crit DMG","Monster DMG"];
 
   for (const stat of weaponFillPriority) {
-    if (canAdd('Weapon', stat)) layout['Weapon'].push(statLabel(stat));
+    if (canAdd('Weapon', stat)) layout['Weapon'].push(stat);
   }
 
   // ATK SPD distribution
@@ -251,7 +232,7 @@ function renderSlots(cls, focus, tier, best) {
   for (const s of rules.slots) {
     if (s!=="Weapon" && asLeft>0) {
       if (canAdd(s,"ATK SPD")) {
-        layout[s].push(statLabel("ATK SPD"));
+        layout[s].push("ATK SPD");
         asLeft--;
       }
     }
@@ -262,8 +243,7 @@ function renderSlots(cls, focus, tier, best) {
 
   const tryAddLine = (slot, stat) => {
     if (!canAdd(slot, stat)) return false;
-    layout[slot].push(statLabel(stat));
-    // track totals
+    layout[slot].push(stat);
     if (stat==="Crit Chance") best.critLines++;
     if (stat==="Evasion")     best.evaLines++;
     if (stat==="DR%")         best.drLines++;
@@ -275,31 +255,45 @@ function renderSlots(cls, focus, tier, best) {
     return true;
   };
 
-  // Pass 1: capped stats
+  // First pass (cap stats with anti-duplication per slot)
   for (const slot of rules.slots){
     if (slot==="Weapon") continue;
+
     const capacity = capPerSlot(slot);
-    const hasAS = layout[slot].some(s => s.includes("ATK SPD"));
+    const hasAS = layout[slot].includes("ATK SPD");
+
+    // prevent multiple capped stats in same slot
+    const alreadyHasCapStat = layout[slot].some(st =>
+      st.includes("Crit Chance") || st.includes("Evasion") || st.includes("DR%")
+    );
 
     if (focus==="DPS"){
-      if ((critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS)
-        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-
-      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS && layout[slot].length < capacity)
-        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+      if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
+        if (!hasAS) if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+      }
+      if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune){
+        if (!hasAS && layout[slot].length < capacity) {
+          if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+        }
+      }
     } else {
-      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS)
-        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-
-      if ((critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS && layout[slot].length < capacity)
-        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-
-      if ((drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity)
-        if (tryAddLine(slot,"DR%")) drAccum += t.DR;
+      if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
+        if (!hasAS) if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+      }
+      if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune){
+        if (!hasAS && layout[slot].length < capacity) {
+          if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+        }
+      }
+      if (!alreadyHasCapStat && (drAccum + t.DR) <= rules.caps.drFromGearRune){
+        if (layout[slot].length < capacity) {
+          if (tryAddLine(slot,"DR%")) drAccum += t.DR;
+        }
+      }
     }
   }
 
-  // Pass 2: filler
+  // Second pass (fill rest with priorities)
   const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"];
   const fillerOrderTank = ["Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"];
 
@@ -324,11 +318,14 @@ function renderSlots(cls, focus, tier, best) {
     layout[slot] = layout[slot].slice(0, capacity);
   }
 
-  // Render slots (purple already styled)
+  // Render slots (skip % on purple spans)
   for (const [slot, stats] of Object.entries(layout)) {
     const div = document.createElement('div');
     div.className = 'slot';
-    div.innerHTML = `<h3>${slot}</h3>` + stats.map(s => `<div>- ${s}</div>`).join('');
+    div.innerHTML = `<h3>${slot}</h3>` + stats.map(s => {
+      const isPurple = (typeof s === 'string' && s.includes('purple-stat'));
+      return isPurple ? `<div>- ${s}</div>` : `<div>- ${s} +${(t[s] * 100).toFixed(0)}%</div>`;
+    }).join('');
     box.appendChild(div);
   }
 
