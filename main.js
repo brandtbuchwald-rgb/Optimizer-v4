@@ -364,7 +364,7 @@ function renderTotals(focus, tier, best){
   const isChaosAbyss = (tier==="Chaos" || tier==="Abyss");
 
   // Base line totals
-  let atkSpd = best.gearLines * t.AS;
+  let atkSpd = best.gearLines * t.AS + best.rune * 0.01;
   let crit   = best.critLines * t.CR;
   let eva    = best.evaLines  * t.EV;
   let dr     = best.drLines   * t.DR;
