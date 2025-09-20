@@ -70,7 +70,7 @@ const rules = {
   common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"],
   castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
   castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
-}
+},
 
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
