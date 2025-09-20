@@ -43,15 +43,15 @@ const rules = {
 
   // Purple (5th) rules per slot
   purple5thLabels: {
-    Necklace: "Crit DMG (5th)",
-    Ring:     "Crit DMG (5th)",
-    Helm:     "Boss DMG / HP% (5th)",
-    Belt:     "Boss DMG / HP% (5th)",
-    WeaponDPS: "Crit DMG (5th +80)",
-    WeaponTank: "HP% (5th +52%)",
-    Chest:   "ATK% (5th)",
-    Gloves:  "ATK% (5th)",
-    Boots:   "ATK% (5th)"
+    Necklace: "Crit DMG ",
+    Ring:     "Crit DMG ",
+    Helm:     "Boss DMG / HP%",
+    Belt:     "Boss DMG / HP% ",
+    WeaponDPS: "Crit DMG (80%)",
+    WeaponTank: "HP% (52%)",
+    Chest:   "ATK%",
+    Gloves:  "ATK% ",
+    Boots:   "ATK% "
   },
 
   // Pet options
