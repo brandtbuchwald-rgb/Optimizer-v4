@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Debug Enabled
+// Rediscover Optimizer v4 — Debug Wrapped
 // ==========================
 
 const els = {};
@@ -94,8 +94,22 @@ function run(){
   logDebug("Best combo:", best);
 
   renderCombo(cls,focus,weap,tier,base,target,best);
-  renderSlots(cls,focus,tier,best);
-  renderTotals(focus,tier,best);
+
+  try {
+    logDebug("renderSlots started");
+    renderSlots(cls,focus,tier,best);
+    logDebug("renderSlots finished");
+  } catch(e) {
+    logDebug("Error in renderSlots:", e.message);
+  }
+
+  try {
+    logDebug("renderTotals started");
+    renderTotals(focus,tier,best);
+    logDebug("renderTotals finished");
+  } catch(e) {
+    logDebug("Error in renderTotals:", e.message);
+  }
 }
 
 // ---------- Render Functions ----------
@@ -113,4 +127,4 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
   `;
 }
 
-// (keep your renderSlots and renderTotals same as before)
+// Keep your existing renderSlots and renderTotals here
