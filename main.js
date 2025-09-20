@@ -73,7 +73,8 @@ const rules = {
 
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
-
+// Wrap purple 5th stats in purple span
+const purple = txt => `<span class="purple-stat">${txt}</span>`;
 // ---------- Core ----------
 function run(){
   const cls    = els.cls.value;
