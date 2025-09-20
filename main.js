@@ -136,10 +136,43 @@ function renderSlots(cls,focus,tier,best){
     if(s!=="Weapon"&&asLeft>0){ layout[s].push(statLabel("ATK SPD")); asLeft--; } 
   }
 
-  // Fill priorities (same as before)
-  // ...
+  // Fill
+  let crit=0,eva=0,dr=0;
+  const add=(slot,stat)=>{
+    layout[slot].push(statLabel(stat));
+    if(stat==="Crit Chance")best.critLines++;
+    if(stat==="Evasion")best.evaLines++;
+    if(stat==="DR%")best.drLines++;
+    if(stat==="ATK%")best.atkLines++;
+    if(stat==="Crit DMG")best.cdLines++;
+    if(stat==="Racial DMG")best.mdLines++;
+    if(stat==="Boss DMG")best.bdLines++;
+    if(stat==="HP%")best.hpLines++;
+    if(stat==="DEF%")best.dfLines++;
+  };
+  const orderDPS=["Crit Chance","Evasion","ATK%","Crit DMG","Racial DMG","HP%","DEF%"];
+  const orderTank=["Evasion","DR%","Crit Chance","HP%","DEF%","ATK%","Crit DMG"];
 
-  // Before rendering:
+  for(const slot of rules.slots){
+    if(slot==="Weapon")continue;
+    const order=(focus==="DPS")?orderDPS:orderTank, capPer=isCA?5:4;
+    for(const stat of order){
+      const over=(stat==="Crit Chance"&&crit+t.CR>rules.caps.critFromGearRune)||
+                 (stat==="Evasion"&&eva+t.EV>rules.caps.evaFromGearRune)||
+                 (stat==="DR%"&&dr+t.DR>rules.caps.drFromGearRune);
+      if(over)continue;
+      // only one cap per slot (Crit/Eva/DR/AS)
+      if(["Crit Chance","Evasion","DR%","ATK SPD"].some(capStat=>layout[slot].some(s=>s.includes(capStat)))) continue;
+      if(layout[slot].length<capPer){
+        add(slot,stat);
+        if(stat==="Crit Chance")crit+=t.CR;
+        if(stat==="Evasion")eva+=t.EV;
+        if(stat==="DR%")dr+=t.DR;
+      }
+    }
+  }
+
+    // Before rendering:
   best._isChaosAbyss = isCA;
   best._focus = focus;
 
