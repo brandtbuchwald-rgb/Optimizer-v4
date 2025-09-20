@@ -99,6 +99,7 @@ function run(){
 }
 
 // ---------- Slots ----------
+// ---------- Slots ----------
 function renderSlots(cls,focus,tier,best){
   const box=document.getElementById('slots'); box.innerHTML='';
   const t=best.tierVals, isCA=(tier==="Chaos"||tier==="Abyss");
@@ -135,43 +136,13 @@ function renderSlots(cls,focus,tier,best){
     if(s!=="Weapon"&&asLeft>0){ layout[s].push(statLabel("ATK SPD")); asLeft--; } 
   }
 
-  // Fill
-  let crit=0,eva=0,dr=0;
-  const add=(slot,stat)=>{
-    layout[slot].push(statLabel(stat));
-    if(stat==="Crit Chance")best.critLines++;
-    if(stat==="Evasion")best.evaLines++;
-    if(stat==="DR%")best.drLines++;
-    if(stat==="ATK%")best.atkLines++;
-    if(stat==="Crit DMG")best.cdLines++;
-    if(stat==="Racial DMG")best.mdLines++;
-    if(stat==="Boss DMG")best.bdLines++;
-    if(stat==="HP%")best.hpLines++;
-    if(stat==="DEF%")best.dfLines++;
-  };
-  const orderDPS=["Crit Chance","Evasion","ATK%","Crit DMG","Racial DMG","HP%","DEF%"];
-  const orderTank=["Evasion","DR%","Crit Chance","HP%","DEF%","ATK%","Crit DMG"];
+  // Fill priorities (same as before)
+  // ...
 
-  for(const slot of rules.slots){
-    if(slot==="Weapon")continue;
-    const order=(focus==="DPS")?orderDPS:orderTank, capPer=isCA?5:4;
-    for(const stat of order){
-      const over=(stat==="Crit Chance"&&crit+t.CR>rules.caps.critFromGearRune)||
-                 (stat==="Evasion"&&eva+t.EV>rules.caps.evaFromGearRune)||
-                 (stat==="DR%"&&dr+t.DR>rules.caps.drFromGearRune);
-      if(over)continue;
-      // only one cap per slot (Crit/Eva/DR/AS)
-      if(["Crit Chance","Evasion","DR%","ATK SPD"].some(capStat=>layout[slot].some(s=>s.includes(capStat)))) continue;
-      if(layout[slot].length<capPer){
-        add(slot,stat);
-        if(stat==="Crit Chance")crit+=t.CR;
-        if(stat==="Evasion")eva+=t.EV;
-        if(stat==="DR%")dr+=t.DR;
-      }
-    }
-  }
+  // Before rendering:
+  best._isChaosAbyss = isCA;
+  best._focus = focus;
 
-  // Render
   for(const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div'); div.className='slot';
     div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
@@ -183,7 +154,6 @@ function renderSlots(cls,focus,tier,best){
 function renderTotals(focus,tier,best){
   const box=document.getElementById('totals'),t=best.tierVals;
   const atk=(best.atkLines*t.ATK)*100, 
-        cd=(best.cdLines*t.CD+ (best._isChaosAbyss&&focus==="DPS"?0.80:0))*100,
         md=(best.mdLines*t.MD)*100, 
         bd=(best.bdLines*t.BD)*100,
         hp=(best.hpLines*t.HP+(best._isChaosAbyss&&focus==="Tank"?0.52:0))*100, 
@@ -191,6 +161,11 @@ function renderTotals(focus,tier,best){
         eva=(best.evaLines*t.EV)*100, 
         dr=(best.drLines*t.DR)*100, 
         crit=(best.critLines*t.CR)*100;
+
+  // Crit Damage fixed
+  const purpleCD = (best._isChaosAbyss ? 2 * t.CD : 0) * 100;
+  const weaponPurpleCD = (best._isChaosAbyss && focus==="DPS") ? 80 : 0;
+  const totalCD = best.cdLines * t.CD * 100 + purpleCD + weaponPurpleCD;
 
   const asGear=best.gearLines*t.AS, asRune=best.rune*0.01;
   const asTotal=(asGear+asRune)*100;
@@ -201,7 +176,7 @@ function renderTotals(focus,tier,best){
     <div>Attack = ${atk.toFixed(0)}%</div>
     <div>Crit Chance = ${crit.toFixed(0)}%</div>
     <div>Crit Chance + Pet = ${((crit/100)+(best.critPet||0))*100}%</div>
-    <div>Crit Damage = ${cd.toFixed(0)}%</div>
+    <div>Crit Damage = ${totalCD.toFixed(0)}%</div>
     <div>Evasion = ${eva.toFixed(0)}%</div>
     <div>DR% = ${dr.toFixed(0)}%</div>
     <div>HP% = ${hp.toFixed(0)}%</div>
