@@ -341,22 +341,21 @@ function slotHasAnyCap(arr){ return arr.some(s => CAP_STATS.has(s)); }
     layout[slot] = layout[slot].slice(0, capacity);
   }
 
-  // Render slots (skip % on purple spans)
-// ---------- Render slots ----------
-for (const [slot, stats] of Object.entries(layout)) {
-  const div = document.createElement('div');
-  div.className = 'slot';
+    // ---------- Render slots ----------
+  for (const [slot, stats] of Object.entries(layout)) {
+    const div = document.createElement('div');
+    div.className = 'slot';
 
-  div.innerHTML =
-    `<h3>${slot}</h3>` +
-    stats.map(s => `<div>- ${statWithValue(s, t)}</div>`).join('');
+    div.innerHTML =
+      `<h3>${slot}</h3>` +
+      stats.map(s => `<div>- ${statWithValue(s, t)}</div>`).join('');
 
-  box.appendChild(div);
+    box.appendChild(div);
+  }
+
+  best._isChaosAbyss = isChaosAbyss;
+  best._focus = focus;
 }
-
-best._isChaosAbyss = isChaosAbyss;
-best._focus = focus;
-// ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
 // ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
 function renderTotals(focus, tier, best){
   const box = document.getElementById('totals');
