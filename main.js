@@ -181,7 +181,7 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots (strict per PDF) ----------
-function renderSlots(cls,focus,tier,best){
+function renderSlots(cls, focus, tier, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
 
@@ -189,70 +189,60 @@ function renderSlots(cls,focus,tier,best){
   const layout = {};
   for (const s of rules.slots) layout[s] = [];
 
-  const isChaosAbyss = (tier==="Chaos" || tier==="Abyss");
+  const isChaosAbyss = (tier === "Chaos" || tier === "Abyss");
   const capPerSlot = slot => isChaosAbyss ? 5 : 4;
 
   const canAdd = (slot, stat) =>
     layout[slot].length < capPerSlot(slot) && !layout[slot].includes(stat);
 
-  // 5th stat at the TOP where applicable (Chaos/Abyss only)
-  if (isChaosAbyss){
-    // Weapon purple depends on focus
+  // 🔮 5th stat at the TOP (Chaos/Abyss only)
+  if (isChaosAbyss) {
     layout['Weapon'].push(
-  focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS)
-                : purple(rules.purple5thLabels.WeaponTank)
-);                              : rules.purple5thLabels.WeaponTank);
-    // Jewelry and armor purples
-    // Jewelry and armor purples (highlight purple)
-layout['Necklace'].push(purple(rules.purple5thLabels.Necklace));
-layout['Ring'].push(purple(rules.purple5thLabels.Ring));
-layout['Helm'].push(purple(rules.purple5thLabels.Helm));
-layout['Belt'].push(purple(rules.purple5thLabels.Belt));
-layout['Chest'].push(purple(rules.purple5thLabels.Chest));
-layout['Gloves'].push(purple(rules.purple5thLabels.Gloves));
-layout['Boots'].push(purple(rules.purple5thLabels.Boots));
-    // Still show helm/belt “5th” as a label reminder even if not present on lower tiers?
-    // We’ll only render real 5ths for Chaos/Abyss. For lower tiers, we keep UI clean.
+      focus === "DPS"
+        ? purple(rules.purple5thLabels.WeaponDPS)
+        : purple(rules.purple5thLabels.WeaponTank)
+    );
+    layout['Necklace'].push(purple(rules.purple5thLabels.Necklace));
+    layout['Ring'].push(purple(rules.purple5thLabels.Ring));
+    layout['Helm'].push(purple(rules.purple5thLabels.Helm));
+    layout['Belt'].push(purple(rules.purple5thLabels.Belt));
+    layout['Chest'].push(purple(rules.purple5thLabels.Chest));
+    layout['Gloves'].push(purple(rules.purple5thLabels.Gloves));
+    layout['Boots'].push(purple(rules.purple5thLabels.Boots));
   }
 
-  // Weapon baseline pool (no AS/CR/EV ever)
+  // Weapon pool setup
   const castLabel = (focus==="DPS")
     ? (isChaosAbyss ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
     : (isChaosAbyss ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
 
-  // Start weapon with Cast depending on focus
   if (canAdd('Weapon', castLabel)) layout['Weapon'].push(castLabel);
 
-  // Then fill weapon from its common pool respecting capacity
   const weaponFillPriority = (focus==="DPS")
     ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","Damage Reduction"]
     : ["HP%","DEF%","Damage Reduction","ATK%","Crit DMG","Monster DMG"];
 
-  for (const stat of weaponFillPriority){
+  for (const stat of weaponFillPriority) {
     if (canAdd('Weapon', stat)) layout['Weapon'].push(stat);
   }
 
-  // Assign ATK SPD lines from optimizer output (never to Weapon)
+  // ATK SPD distribution
   let asLeft = best.gearLines;
-  for (const s of rules.slots){
-    if (s!=="Weapon" && asLeft>0){
-      if (canAdd(s,"ATK SPD")){
+  for (const s of rules.slots) {
+    if (s!=="Weapon" && asLeft>0) {
+      if (canAdd(s,"ATK SPD")) {
         layout[s].push("ATK SPD");
         asLeft--;
       }
     }
   }
 
-  // Priority passes per slot for non-weapon
-  // DPS priority: AS (already placed) → Crit → Evasion → ATK% → Crit DMG → Monster DMG → HP% → DEF%
-  // Tank priority: AS → Evasion → Crit → DR → HP% → DEF% → ATK% → Crit DMG
-
+  // Crit/Eva/DR priorities
   let critAccum = 0, evaAccum = 0, drAccum = 0;
 
   const tryAddLine = (slot, stat) => {
     if (!canAdd(slot, stat)) return false;
     layout[slot].push(stat);
-    // count lines for totals
     if (stat==="Crit Chance") best.critLines++;
     if (stat==="Evasion")     best.evaLines++;
     if (stat==="DR%")         best.drLines++;
@@ -264,40 +254,30 @@ layout['Boots'].push(purple(rules.purple5thLabels.Boots));
     return true;
   };
 
-  // First pass: apply capped stats (Crit/Eva/DR) respecting caps and avoiding duplicating AS slot
+  // First pass: capped stats
   for (const slot of rules.slots){
     if (slot==="Weapon") continue;
-
     const capacity = capPerSlot(slot);
-
-    // We avoid adding crit/eva to slots already holding ATK SPD only if we run out of space; otherwise it's allowed.
-    // But per your complaints about waste and clutter, we'll prefer to place crit/eva on slots without AS when possible.
     const hasAS = layout[slot].includes("ATK SPD");
 
     if (focus==="DPS"){
-      // Crit up to cap
       if ((critAccum + t.CR) <= rules.caps.critFromGearRune) {
-        // prefer slots without AS first
         if (!hasAS) if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
       }
-      // Evasion next (not capped by PDF beyond gear cap 40)
       if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune){
         if (!hasAS && layout[slot].length < capacity) {
           if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
         }
       }
     } else {
-      // Tank: Evasion first
       if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
         if (!hasAS) if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
       }
-      // Then Crit up to 50
       if ((critAccum + t.CR) <= rules.caps.critFromGearRune){
         if (!hasAS && layout[slot].length < capacity) {
           if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
         }
       }
-      // DR after that, up to 100
       if ((drAccum + t.DR) <= rules.caps.drFromGearRune){
         if (layout[slot].length < capacity) {
           if (tryAddLine(slot,"DR%")) drAccum += t.DR;
@@ -306,7 +286,7 @@ layout['Boots'].push(purple(rules.purple5thLabels.Boots));
     }
   }
 
-  // Second pass: fill remaining capacity per slot with ordered priorities
+  // Second pass: filler priorities
   const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"];
   const fillerOrderTank = ["Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"];
 
@@ -317,8 +297,6 @@ layout['Boots'].push(purple(rules.purple5thLabels.Boots));
 
     for (const stat of order){
       if (layout[slot].length >= capacity) break;
-
-      // obey caps for crit/eva/dr
       if (stat==="Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
       if (stat==="Evasion"     && (evaAccum  + t.EV) > rules.caps.evaFromGearRune)  continue;
       if (stat==="DR%"         && (drAccum   + t.DR) > rules.caps.drFromGearRune)   continue;
@@ -329,24 +307,21 @@ layout['Boots'].push(purple(rules.purple5thLabels.Boots));
         if (stat==="DR%")         drAccum   += t.DR;
       }
     }
-
-    // Trim just in case
     layout[slot] = layout[slot].slice(0, capacity);
   }
 
   // Render slots
-  for (const [slot,stats] of Object.entries(layout)){
+  for (const [slot, stats] of Object.entries(layout)) {
     const div = document.createElement('div');
     div.className = 'slot';
     div.innerHTML = `<h3>${slot}</h3>` + stats.map(s => `<div>- ${s}</div>`).join('');
     box.appendChild(div);
   }
 
-  // stash whether tier has chaos/abyss for totals calc
+  // mark for totals
   best._isChaosAbyss = isChaosAbyss;
   best._focus = focus;
 }
-
 // ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
 function renderTotals(focus, tier, best){
   const box = document.getElementById('totals');
