@@ -42,20 +42,22 @@ const rules = {
   },
 
   // Purple (5th) rules per slot
+    // Purple (5th) rules per slot
   purple5thLabels: {
-  Necklace: "Crit DMG",
-  Ring:     "Crit DMG",
-  Helm:     "Boss DMG / HP%",
-  Belt:     "Boss DMG / HP%",
-  WeaponDPS: "Crit DMG",
-  WeaponTank: "HP%",
-  Chest:   "ATK%",
-  Gloves:  "ATK%",
-  Boots:   "ATK%"
-}
+    Necklace: "Crit DMG",
+    Ring:     "Crit DMG",
+    Helm:     "Boss DMG / HP%",
+    Belt:     "Boss DMG / HP%",
+    WeaponDPS: "Crit DMG",
+    WeaponTank: "HP%",
+    Chest:   "ATK%",
+    Gloves:  "ATK%",
+    Boots:   "ATK%"
+  },
 
   // Pet options
   pets: {
+  
     None:{AS:0.00, CR:0.00},
     B:{AS:0.06, CR:0.06},
     A:{AS:0.09, CR:0.09},
@@ -72,20 +74,13 @@ const rules = {
 
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
-// which stat keys have numeric per-line values in t = best.tierVals
-const NUMERIC_KEYS = new Set(["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%","Evasion","Crit Chance","ATK SPD"]);
 
-// format a single stat label with its value when numeric
-// Which stats have numeric per-line values
 const NUMERIC_KEYS = new Set([
   "ATK%", "Crit DMG", "Monster DMG", "HP%", "DEF%", "DR%", "Evasion", "Crit Chance", "ATK SPD"
 ]);
 
-// Format one stat with its numeric value
 function statWithValue(label, t) {
-  // If label already wrapped purple or is special text, don’t format
   if (label.includes("purple-stat") || label.includes("Boss DMG")) return label;
-
   if (!NUMERIC_KEYS.has(label)) return label;
 
   const map = {
@@ -95,16 +90,10 @@ function statWithValue(label, t) {
 
   const key = map[label];
   const val = t[key];
-  if (typeof val === "number") {
-    return `${label} +${(val*100).toFixed(0)}%`;
-  }
-  return label; // fallback, never NaN
+  return (typeof val === "number") ? `${label} +${(val*100).toFixed(0)}%` : label;
 }
 
-// Wrap purple 5th stats with styling
 const purple = txt => `<span class="purple-stat">${txt}</span>`;
-// Wrap purple 5th stats in purple span
-
 // ---------- Core ----------
 function run(){
   const cls    = els.cls.value;
