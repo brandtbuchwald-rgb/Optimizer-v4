@@ -164,7 +164,8 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
   `;
 }
 
-function renderSlots(cls, focus, tier, best){
+// ---- Slots ----
+function renderSlots(cls,focus,tier,best){
   const box = document.getElementById('slots');
   box.innerHTML = '';
 
@@ -177,19 +178,48 @@ function renderSlots(cls, focus, tier, best){
   best.evaLines  = 0;
   best.drLines   = 0;
 
-  // --- Weapon rules ---
+  // ---- Weapon rules ----
   if (focus === "DPS") {
-    layout['Weapon'] = (tier === "Primal")
-      ? ["Cast Demon Lord","ATK%","Crit DMG"]
-      : ["Cast Demon Lord","ATK%","Crit DMG","Monster DMG"];
-  } else {
-    layout['Weapon'] = (tier === "Primal")
-      ? ["Cast Evasion","HP%","DEF%"]
-      : ["Cast Evasion","HP%","DEF%","DR%"];
-    if (tier !== "Primal") best.drLines++;
+    if (tier === "Primal" || tier === "Original") {
+      layout['Weapon'] = [
+        "Cast Demon Lord",
+        "ATK%",
+        "Crit DMG",
+        "Monster DMG"
+      ];
+    } else { // Chaos / Abyss -> add purple Crit DMG first
+      layout['Weapon'] = [
+        "Crit DMG (Purple 80%)",
+        "Cast Demon Lord",
+        "ATK%",
+        "Crit DMG",
+        "Monster DMG"
+      ];
+    }
+  } else { // Tank
+    if (tier === "Primal" || tier === "Original") {
+      layout['Weapon'] = ["Cast Evasion","HP%","DEF%"];
+    } else {
+      layout['Weapon'] = [
+        "Cast Evasion",
+        "HP%",
+        "DEF%",
+        "DR%",
+        "Crit DMG (Purple 80%)"
+      ];
+      best.drLines++;
+    }
   }
 
-  // --- ATK SPD allocation ---
+  // ---- Necklace & Ring purple 5th ----
+  layout['Necklace'].push("Crit DMG (Purple 5th)");
+  layout['Ring'].push("Crit DMG (Purple 5th)");
+
+  // ---- Helm & Belt purple 5th ----
+  layout['Helm'].push("Boss DMG / HP% (Purple 5th)");
+  layout['Belt'].push("Boss DMG / HP% (Purple 5th)");
+
+  // ---- ATK SPD lines ----
   let asLeft = best.gearLines;
   for (const s of rules.slots){
     if (s!=="Weapon" && asLeft>0){
@@ -198,44 +228,60 @@ function renderSlots(cls, focus, tier, best){
     }
   }
 
-  // --- Per-slot normal stat priority ---
-  for (const slot of rules.slots){
-    if (slot === "Weapon") continue;
+  // ---- Crit Chance priority for DPS, Evasion priority for Tank ----
+  let critAccum = 0, evaAccum = 0, drAccum = 0;
+  for (const s of rules.slots){
+    if (s==="Weapon") continue;
 
-    // add 5th stat FIRST if Helm or Belt
-    if (slot === "Helm" || slot === "Belt"){
-      layout[slot].push("Boss DMG / HP%"); // display choice
-    }
-
-    // DPS priority
-    if (focus === "DPS"){
-      const dpsPriority = ["Crit Chance","ATK%","Crit DMG","Monster DMG"];
-      for (const stat of dpsPriority){
-        if (layout[slot].length < 5 && !layout[slot].includes(stat)){
-          layout[slot].push(stat);
-          if(stat==="Crit Chance") best.critLines++;
-        }
+    if (focus==="Tank") {
+      // Tank → Evasion > Crit Chance
+      if (!layout[s].includes("ATK SPD") &&
+          (evaAccum + tierVals.EV) <= rules.caps.evaFromGearRune){
+        layout[s].push("Evasion");
+        evaAccum += tierVals.EV;
+        best.evaLines++;
       }
     }
 
-    // Tank priority
-    if (focus === "Tank"){
-      const tankPriority = ["ATK SPD","Evasion","DR%","ATK%","Crit Chance"];
-      for (const stat of tankPriority){
-        if (layout[slot].length < 5 && !layout[slot].includes(stat)){
-          layout[slot].push(stat);
-          if(stat==="Evasion") best.evaLines++;
-          if(stat==="DR%") best.drLines++;
-          if(stat==="Crit Chance") best.critLines++;
-        }
-      }
+    if (!layout[s].includes("ATK SPD") &&
+        (critAccum + tierVals.CR) <= rules.caps.critFromGearRune){
+      layout[s].push("Crit Chance");
+      critAccum += tierVals.CR;
+      best.critLines++;
     }
-
-    // trim to 5 lines max (5th + 4 normals)
-    layout[slot] = layout[slot].slice(0,5);
   }
 
-  // --- Render ---
+  // ---- DR% until 100% ----
+  for (const s of rules.slots){
+    if (s==="Weapon") continue;
+    if (drAccum + tierVals.DR <= rules.caps.drFromGearRune &&
+        layout[s].length < 5){
+      layout[s].push("DR%");
+      drAccum += tierVals.DR;
+      best.drLines++;
+    }
+  }
+
+  // ---- Fill remaining with DPS or Tank priorities ----
+  let filler = (focus==="DPS")
+    ? ["ATK%","Crit DMG","Monster DMG"]
+    : ["DR%","HP%","DEF%","ATK%","Crit Chance"];
+
+  for (const s of rules.slots){
+    while(layout[s].length < (tier==="Chaos"||tier==="Abyss" ? 5 : 4)){
+      for (const f of filler){
+        if(layout[s].length < (tier==="Chaos"||tier==="Abyss" ? 5 : 4) &&
+           !layout[s].includes(f)){
+          layout[s].push(f);
+          if(f==="Crit Chance") best.critLines++;
+          if(f==="Evasion") best.evaLines++;
+          if(f==="DR%") best.drLines++;
+        }
+      }
+    }
+  }
+
+  // ---- Render slots ----
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
@@ -243,5 +289,6 @@ function renderSlots(cls, focus, tier, best){
     box.appendChild(div);
   }
 
+  // ---- Totals panel ----
   renderTotals(best);
 }
