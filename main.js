@@ -195,21 +195,41 @@ function renderSlots(cls, focus, tier, best) {
   const canAdd = (slot, stat) =>
     layout[slot].length < capPerSlot(slot) && !layout[slot].includes(stat);
 
-  // 🔮 5th stat at the TOP (Chaos/Abyss only)
+  // Map stat → value for this tier
+  const valMap = {
+    "ATK SPD": t.AS,
+    "Crit Chance": t.CR,
+    "Evasion": t.EV,
+    "ATK%": t.ATK,
+    "Crit DMG": t.CD,
+    "Monster DMG": t.MD,
+    "Boss DMG": t.BD,
+    "HP%": t.HP,
+    "DEF%": t.DF,
+    "DR%": t.DR
+  };
+
+  // render helpers
+  const statLabel = stat => `${stat} +${(valMap[stat] * 100).toFixed(0)}%`;
+  const purpleLabel = stat => `<span class="purple-stat">${statLabel(stat)}</span>`;
+
+  // 🔮 Add 5th stats for Chaos/Abyss
   if (isChaosAbyss) {
     layout['Weapon'].push(
       focus === "DPS"
-        ? purple(rules.purple5thLabels.WeaponDPS)
-        : purple(rules.purple5thLabels.WeaponTank)
+        ? purpleLabel(rules.purple5thLabels.WeaponDPS)
+        : purpleLabel(rules.purple5thLabels.WeaponTank)
     );
-    layout['Necklace'].push(purple(rules.purple5thLabels.Necklace));
-    layout['Ring'].push(purple(rules.purple5thLabels.Ring));
-    layout['Helm'].push(purple(rules.purple5thLabels.Helm));
-    layout['Belt'].push(purple(rules.purple5thLabels.Belt));
-    layout['Chest'].push(purple(rules.purple5thLabels.Chest));
-    layout['Gloves'].push(purple(rules.purple5thLabels.Gloves));
-    layout['Boots'].push(purple(rules.purple5thLabels.Boots));
+    layout['Necklace'].push(purpleLabel(rules.purple5thLabels.Necklace));
+    layout['Ring'].push(purpleLabel(rules.purple5thLabels.Ring));
+    layout['Helm'].push(purpleLabel(rules.purple5thLabels.Helm));
+    layout['Belt'].push(purpleLabel(rules.purple5thLabels.Belt));
+    layout['Chest'].push(purpleLabel(rules.purple5thLabels.Chest));
+    layout['Gloves'].push(purpleLabel(rules.purple5thLabels.Gloves));
+    layout['Boots'].push(purpleLabel(rules.purple5thLabels.Boots));
   }
+
+  // 🟢 Existing logic (modified to use statLabel)
 
   // Weapon pool setup
   const castLabel = (focus==="DPS")
@@ -219,11 +239,11 @@ function renderSlots(cls, focus, tier, best) {
   if (canAdd('Weapon', castLabel)) layout['Weapon'].push(castLabel);
 
   const weaponFillPriority = (focus==="DPS")
-    ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","Damage Reduction"]
-    : ["HP%","DEF%","Damage Reduction","ATK%","Crit DMG","Monster DMG"];
+    ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"]
+    : ["HP%","DEF%","DR%","ATK%","Crit DMG","Monster DMG"];
 
   for (const stat of weaponFillPriority) {
-    if (canAdd('Weapon', stat)) layout['Weapon'].push(stat);
+    if (canAdd('Weapon', stat)) layout['Weapon'].push(statLabel(stat));
   }
 
   // ATK SPD distribution
@@ -231,7 +251,7 @@ function renderSlots(cls, focus, tier, best) {
   for (const s of rules.slots) {
     if (s!=="Weapon" && asLeft>0) {
       if (canAdd(s,"ATK SPD")) {
-        layout[s].push("ATK SPD");
+        layout[s].push(statLabel("ATK SPD"));
         asLeft--;
       }
     }
@@ -242,7 +262,8 @@ function renderSlots(cls, focus, tier, best) {
 
   const tryAddLine = (slot, stat) => {
     if (!canAdd(slot, stat)) return false;
-    layout[slot].push(stat);
+    layout[slot].push(statLabel(stat));
+    // track totals
     if (stat==="Crit Chance") best.critLines++;
     if (stat==="Evasion")     best.evaLines++;
     if (stat==="DR%")         best.drLines++;
@@ -254,39 +275,31 @@ function renderSlots(cls, focus, tier, best) {
     return true;
   };
 
-  // First pass: capped stats
+  // Pass 1: capped stats
   for (const slot of rules.slots){
     if (slot==="Weapon") continue;
     const capacity = capPerSlot(slot);
-    const hasAS = layout[slot].includes("ATK SPD");
+    const hasAS = layout[slot].some(s => s.includes("ATK SPD"));
 
     if (focus==="DPS"){
-      if ((critAccum + t.CR) <= rules.caps.critFromGearRune) {
-        if (!hasAS) if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-      }
-      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune){
-        if (!hasAS && layout[slot].length < capacity) {
-          if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-        }
-      }
+      if ((critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS)
+        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+
+      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS && layout[slot].length < capacity)
+        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
     } else {
-      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
-        if (!hasAS) if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-      }
-      if ((critAccum + t.CR) <= rules.caps.critFromGearRune){
-        if (!hasAS && layout[slot].length < capacity) {
-          if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-        }
-      }
-      if ((drAccum + t.DR) <= rules.caps.drFromGearRune){
-        if (layout[slot].length < capacity) {
-          if (tryAddLine(slot,"DR%")) drAccum += t.DR;
-        }
-      }
+      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS)
+        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+
+      if ((critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS && layout[slot].length < capacity)
+        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+
+      if ((drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity)
+        if (tryAddLine(slot,"DR%")) drAccum += t.DR;
     }
   }
 
-  // Second pass: filler priorities
+  // Pass 2: filler
   const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"];
   const fillerOrderTank = ["Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG"];
 
@@ -307,10 +320,11 @@ function renderSlots(cls, focus, tier, best) {
         if (stat==="DR%")         drAccum   += t.DR;
       }
     }
+
     layout[slot] = layout[slot].slice(0, capacity);
   }
 
-  // Render slots
+  // Render slots (purple already styled)
   for (const [slot, stats] of Object.entries(layout)) {
     const div = document.createElement('div');
     div.className = 'slot';
@@ -318,7 +332,6 @@ function renderSlots(cls, focus, tier, best) {
     box.appendChild(div);
   }
 
-  // mark for totals
   best._isChaosAbyss = isChaosAbyss;
   best._focus = focus;
 }
