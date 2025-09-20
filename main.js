@@ -353,20 +353,20 @@ function slotHasAnyCap(arr){ return arr.some(s => CAP_STATS.has(s)); }
   }
 
   // Render slots (skip % on purple spans)
-  for (const [slot, stats] of Object.entries(layout)) {
-    const div = document.createElement('div');
-    div.className = 'slot';
-    div.innerHTML = `<h3>${slot}</h3>` + stats.map(s => {
-      div.innerHTML = `<h3>${slot}</h3>` 
-  + stats.map(s => `<div>- ${statWithValue(s, t)}</div>`).join('');
-      return isPurple ? `<div>- ${s}</div>` : `<div>- ${s} +${(t[s] * 100).toFixed(0)}%</div>`;
-    }).join('');
-    box.appendChild(div);
-  }
+// ---------- Render slots ----------
+for (const [slot, stats] of Object.entries(layout)) {
+  const div = document.createElement('div');
+  div.className = 'slot';
 
-  best._isChaosAbyss = isChaosAbyss;
-  best._focus = focus;
+  div.innerHTML =
+    `<h3>${slot}</h3>` +
+    stats.map(s => `<div>- ${statWithValue(s, t)}</div>`).join('');
+
+  box.appendChild(div);
 }
+
+best._isChaosAbyss = isChaosAbyss;
+best._focus = focus;
 // ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
 // ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
 function renderTotals(focus, tier, best){
