@@ -12,6 +12,7 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 // ---------- Master Rules (from Rediscover Build Generator 2.0 PDF) ----------
+// ---------- Master Rules (from Rediscover Build Generator 2.0 PDF) ----------
 const rules = {
   // Render order
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
@@ -42,7 +43,6 @@ const rules = {
   },
 
   // Purple (5th) rules per slot
-    // Purple (5th) rules per slot
   purple5thLabels: {
     Necklace: "Crit DMG",
     Ring:     "Crit DMG",
@@ -57,7 +57,6 @@ const rules = {
 
   // Pet options
   pets: {
-  
     None:{AS:0.00, CR:0.00},
     B:{AS:0.06, CR:0.06},
     A:{AS:0.09, CR:0.09},
@@ -67,11 +66,11 @@ const rules = {
   // Weapon stat pools (no AS/CR/EV on weapons)
   // Note: Cast values differ by Chaos/Abyss vs others
   weaponPool: {
-  common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"],
-  castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
-  castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
-},
-
+    common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"],
+    castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
+    castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
+  }
+}; // 👈 closes the rules object properly
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
