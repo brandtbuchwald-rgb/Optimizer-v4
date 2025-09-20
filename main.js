@@ -333,74 +333,46 @@ function renderSlots(cls, focus, tier, best) {
   best._focus = focus;
 }
 // ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
+// ---------- Totals (gear+rune shown; pet added to crit-with-pet; purple handled separately) ----------
 function renderTotals(focus, tier, best){
   const box = document.getElementById('totals');
   box.innerHTML = '';
 
   const t = best.tierVals;
+  const isChaosAbyss = (tier==="Chaos" || tier==="Abyss");
 
-  // Attack Speed (gear+rune only)
-  const asGear = best.gearLines * t.AS;
-  const asRune = best.rune * 0.01;
-  const totalAS = asGear + asRune;
+  // Base line totals
+  let atkSpd = best.gearLines * t.AS;
+  let crit   = best.critLines * t.CR;
+  let eva    = best.evaLines  * t.EV;
+  let dr     = best.drLines   * t.DR;
+  let atk    = best.atkLines  * t.ATK;
+  let cd     = best.cdLines   * t.CD;
+  let md     = best.mdLines   * t.MD;
+  let hp     = best.hpLines   * t.HP;
+  let df     = best.dfLines   * t.DF;
 
-  // Crit Chance
-  const critFromLines = best.critLines * t.CR;
-  const critGearRune  = Math.min(critFromLines, rules.caps.critFromGearRune);
-  const critWaste     = Math.max(0, critFromLines - rules.caps.critFromGearRune);
-  const critWithPet   = Math.min(critGearRune + (best.critPet || 0), rules.caps.critTotal);
+  // Add purple contributions
+  if (isChaosAbyss) {
+    atk += 3 * t.ATK; // Chest, Gloves, Boots purples
+    cd  += 2 * t.CD;  // Necklace, Ring purples
+    cd  += t.CD;      // Weapon purple (both DPS/Tank use Crit DMG 5th)
+    // helm/belt purple is boss/hp, handled separately in text
+  }
 
-  // Evasion
-  const evaFromLines = best.evaLines * t.EV;
-  const evaGearRune  = Math.min(evaFromLines, rules.caps.evaFromGearRune);
-  const evaWaste     = Math.max(0, evaFromLines - rules.caps.evaFromGearRune);
-
-  // DR
-  const drFromLines = best.drLines * t.DR;
-  const drGearRune  = Math.min(drFromLines, rules.caps.drFromGearRune);
-  const drWaste     = Math.max(0, drFromLines - rules.caps.drFromGearRune);
-
-  // Non-capped accumulations
-  const atkFromLines = best.atkLines * t.ATK;
-  const cdFromLines  = best.cdLines  * t.CD;
-  const mdFromLines  = best.mdLines  * t.MD;
-  const hpFromLines  = best.hpLines  * t.HP;
-  const dfFromLines  = best.dfLines  * t.DF;
-
-  // Purple “5th” bonuses for Chaos/Abyss shown and included where appropriate
-  // Chest/Gloves/Boots → ATK% 5th (3 slots)
-  // Necklace/Ring → Crit DMG 5th (2 slots)
-  // Helm/Belt → HP% 5th alternative to Boss DMG (we’ll include HP% as one possible choice)
-  // Weapon → DPS: +80 Crit DMG; Tank: +52% HP
-  const isCA = best._isChaosAbyss;
-
-  const purpleATK = isCA ? 3 * t.ATK : 0;      // chest/gloves/boots
-  const purpleCD  = isCA ? 2 * t.CD  : 0;      // necklace/ring
-  const purpleHP  = isCA ? 2 * t.HP  : 0;      // helm/belt (if choosing HP over Boss DMG)
-
-  const weaponPurpleCD = isCA && best._focus==="DPS" ? 80 : 0; // flat +80 CD
-  const weaponPurpleHP = isCA && best._focus==="Tank" ? 0.52 : 0; // +52% HP
-
-  // Totals
-  const totalATKpct = (atkFromLines + purpleATK) * 100;
-  const totalCD     = (cdFromLines + purpleCD) + weaponPurpleCD; // CD is shown as scalar sum, your UI previously printed a raw number
-  const totalMDpct  = (mdFromLines) * 100;
-  const totalHPpct  = (hpFromLines + purpleHP + weaponPurpleHP) * 100;
-  const totalDFpct  = (dfFromLines) * 100;
-
+  // Render totals
   box.innerHTML = `
-    <h3>Totals</h3>
-    <div>Attack Speed (gear + rune) = ${(totalAS*100).toFixed(1)}%</div>
-    <div>Crit Chance (gear + rune) = ${(critGearRune*100).toFixed(1)}% ${critWaste>0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>Crit Chance + Pet = ${(critWithPet*100).toFixed(1)}%</div>
-    <div>Evasion (gear + rune) = ${(evaGearRune*100).toFixed(1)}% ${evaWaste>0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>DR% (gear + rune) = ${(drGearRune*100).toFixed(1)}% ${drWaste>0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
-    <hr/>
-    <div>ATK% (incl. purple ATK on Chest/Gloves/Boots) = ${totalATKpct.toFixed(1)}%</div>
-    <div>Crit DMG (incl. purple on Weapon${isCA ? ', Necklace, Ring' : ''}) = ${totalCD.toFixed(2)}</div>
-    <div>Monster DMG (gear) = ${totalMDpct.toFixed(1)}%</div>
-    <div>Boss DMG (Helm/Belt 5th) = shown as choice vs HP%</div>
-    <div>HP% (incl. purple on Helm/Belt and Tank Weapon) = ${totalHPpct.toFixed(1)}%</div>
-    <div>DEF% = ${totalDFpct.toFixed(1)}%</div>
+    <div><b>Attack Speed (gear + rune)</b> = ${(atkSpd*100).toFixed(1)}%</div>
+    <div><b>Crit Chance (gear + rune)</b> = ${(crit*100).toFixed(1)}%</div>
+    <div><b>Crit Chance + Pet</b> = ${((crit + best.critPet) * 100).toFixed(1)}%</div>
+    <div><b>Evasion (gear + rune)</b> = ${(eva*100).toFixed(1)}%</div>
+    <div><b>DR% (gear + rune)</b> = ${(dr*100).toFixed(1)}%</div>
+    <hr>
+    <div><b>ATK%</b> (incl. purple ATK on Chest/Gloves/Boots) = ${(atk*100).toFixed(1)}%</div>
+    <div><b>Crit DMG</b> (incl. purple on Weapon, Necklace, Ring) = ${(cd*100).toFixed(1)}</div>
+    <div><b>Monster DMG (gear)</b> = ${(md*100).toFixed(1)}%</div>
+    <div><b>Boss DMG (Helm/Belt 5th)</b> = shown as choice vs HP%</div>
+    <div><b>HP%</b> (incl. purple on Helm/Belt and Tank Weapon) = ${(hp*100).toFixed(1)}%</div>
+    <div><b>DEF%</b> = ${(df*100).toFixed(1)}%</div>
   `;
 }
