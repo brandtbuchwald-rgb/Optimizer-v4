@@ -198,17 +198,19 @@ function renderSlots(cls,focus,tier,best){
   // 5th stat at the TOP where applicable (Chaos/Abyss only)
   if (isChaosAbyss){
     // Weapon purple depends on focus
-    layout['Weapon'].push(focus==="DPS" ? rules.purple5thLabels.WeaponDPS
-                                        : rules.purple5thLabels.WeaponTank);
+    layout['Weapon'].push(
+  focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS)
+                : purple(rules.purple5thLabels.WeaponTank)
+);                              : rules.purple5thLabels.WeaponTank);
     // Jewelry and armor purples
-    layout['Necklace'].push(rules.purple5thLabels.Necklace);
-    layout['Ring'].push(rules.purple5thLabels.Ring);
-    layout['Helm'].push(rules.purple5thLabels.Helm);
-    layout['Belt'].push(rules.purple5thLabels.Belt);
-    layout['Chest'].push(rules.purple5thLabels.Chest);
-    layout['Gloves'].push(rules.purple5thLabels.Gloves);
-    layout['Boots'].push(rules.purple5thLabels.Boots);
-  } else {
+    // Jewelry and armor purples (highlight purple)
+layout['Necklace'].push(purple(rules.purple5thLabels.Necklace));
+layout['Ring'].push(purple(rules.purple5thLabels.Ring));
+layout['Helm'].push(purple(rules.purple5thLabels.Helm));
+layout['Belt'].push(purple(rules.purple5thLabels.Belt));
+layout['Chest'].push(purple(rules.purple5thLabels.Chest));
+layout['Gloves'].push(purple(rules.purple5thLabels.Gloves));
+layout['Boots'].push(purple(rules.purple5thLabels.Boots));
     // Still show helm/belt “5th” as a label reminder even if not present on lower tiers?
     // We’ll only render real 5ths for Chaos/Abyss. For lower tiers, we keep UI clean.
   }
