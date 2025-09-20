@@ -72,6 +72,24 @@ const rules = {
 
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
+// which stat keys have numeric per-line values in t = best.tierVals
+const NUMERIC_KEYS = new Set(["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%","Evasion","Crit Chance","ATK SPD"]);
+
+// format a single stat label with its value when numeric
+function statWithValue(label, t) {
+  // if it's a purple label like "Crit DMG +80" or "Boss DMG / HP%" just return as-is
+  if (!NUMERIC_KEYS.has(label)) return label;
+
+  // map display label -> key in t
+  const map = {
+    "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP","DEF%":"DF","DR%":"DR",
+    "Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
+  };
+  const key = map[label];
+  const val = t[key];
+  if (typeof val === "number") return `${label} +${(val*100).toFixed(0)}%`;
+  return label; // fallback, never show NaN
+}
 // Wrap purple 5th stats in purple span
 const purple = txt => `<span class="purple-stat">${txt}</span>`;
 // ---------- Core ----------
