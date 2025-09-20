@@ -126,5 +126,17 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
     </ul>
   `;
 }
+// ---------- Placeholder Slots ----------
+function renderSlots(cls, focus, tier, best) {
+  logDebug("renderSlots is running");
+  const box = document.getElementById('slots');
+  box.innerHTML = `<div><b>Slots placeholder</b> for ${cls} (${focus})</div>`;
+}
 
+// ---------- Placeholder Totals ----------
+function renderTotals(focus, tier, best) {
+  logDebug("renderTotals is running");
+  const box = document.getElementById('totals');
+  box.innerHTML = `<div><b>Totals placeholder</b> for gear tier ${tier}</div>`;
+}
 // Keep your existing renderSlots and renderTotals here
