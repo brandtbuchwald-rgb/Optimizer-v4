@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Rules-Accurate (Patched)
+// Rediscover Optimizer v4 — Rules-Accurate (with 5th values, cap restriction, weapon fill)
 // ==========================
 
 const els = {};
@@ -27,12 +27,6 @@ const rules = {
     Original: {AS:0.12,CR:0.12,EV:0.12,ATK:0.23,CD:0.35,MD:0.35,HP:0.23,DF:0.23,DR:0.17},
     Chaos:    {AS:0.14,CR:0.14,EV:0.14,ATK:0.26,CD:0.40,MD:0.40,HP:0.26,DF:0.26,DR:0.19},
     Abyss:    {AS:0.16,CR:0.16,EV:0.16,ATK:0.29,CD:0.45,MD:0.45,HP:0.29,DF:0.29,DR:0.21}
-  },
-  purple5thLabels: {
-    Necklace:"Crit DMG (5th)", Ring:"Crit DMG (5th)",
-    Helm:"Boss DMG / HP% (5th)", Belt:"Boss DMG / HP% (5th)",
-    WeaponDPS:"Crit DMG (5th +80)", WeaponTank:"HP% (5th +52%)",
-    Chest:"ATK% (5th)", Gloves:"ATK% (5th)", Boots:"ATK% (5th)"
   },
   pets: { None:{AS:0,CR:0}, B:{AS:0.06,CR:0.06}, A:{AS:0.09,CR:0.09}, S:{AS:0.12,CR:0.12} },
   weaponPool: {
@@ -133,25 +127,32 @@ function renderSlots(cls,focus,tier,best){
 
   // Purples
   if(isCA){
-    layout['Weapon'].push(focus==="DPS"?rules.purple5thLabels.WeaponDPS:rules.purple5thLabels.WeaponTank);
-    layout['Necklace'].push(rules.purple5thLabels.Necklace); layout['Ring'].push(rules.purple5thLabels.Ring);
-    layout['Helm'].push(rules.purple5thLabels.Helm); layout['Belt'].push(rules.purple5thLabels.Belt);
-    layout['Chest'].push(rules.purple5thLabels.Chest); layout['Gloves'].push(rules.purple5thLabels.Gloves);
-    layout['Boots'].push(rules.purple5thLabels.Boots);
+    layout['Weapon'].push(focus==="DPS" ? "Crit DMG +80" : "HP% +52%");
+    layout['Necklace'].push(statLabel("Crit DMG"));
+    layout['Ring'].push(statLabel("Crit DMG"));
+    layout['Helm'].push("Boss DMG +??% / "+statLabel("HP%"));
+    layout['Belt'].push("Boss DMG +??% / "+statLabel("HP%"));
+    layout['Chest'].push(statLabel("ATK%"));
+    layout['Gloves'].push(statLabel("ATK%"));
+    layout['Boots'].push(statLabel("ATK%"));
   }
 
-  // Weapon
+  // Weapon: add Cast + fill remaining with common pool
+  const cap=isCA?5:4;
   const cast=(focus==="DPS")?(isCA?rules.weaponPool.castDPS.chaosAbyss:rules.weaponPool.castDPS.normal)
                             :(isCA?rules.weaponPool.castTank.chaosAbyss:rules.weaponPool.castTank.normal);
   layout['Weapon'].push(cast);
+  for(const stat of rules.weaponPool.common){
+    if(layout['Weapon'].length<cap){ layout['Weapon'].push(statLabel(stat)); }
+  }
 
   // Assign AS
   let asLeft=best.gearLines;
-  for(const s of rules.slots){ if(s!=="Weapon"&&asLeft>0){ layout[s].push("ATK SPD"); asLeft--; } }
+  for(const s of rules.slots){ if(s!=="Weapon"&&asLeft>0){ layout[s].push(statLabel("ATK SPD")); asLeft--; } }
 
   // Fill
   let crit=0,eva=0,dr=0;
-  const add=(slot,stat)=>{layout[slot].push(stat);
+  const add=(slot,stat)=>{layout[slot].push(statLabel(stat));
     if(stat==="Crit Chance")best.critLines++;
     if(stat==="Evasion")best.evaLines++;
     if(stat==="DR%")best.drLines++;
@@ -161,19 +162,21 @@ function renderSlots(cls,focus,tier,best){
     if(stat==="HP%")best.hpLines++;
     if(stat==="DEF%")best.dfLines++;
   };
-
   const orderDPS=["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%"];
   const orderTank=["Evasion","DR%","Crit Chance","HP%","DEF%","ATK%","Crit DMG"];
 
   for(const slot of rules.slots){
     if(slot==="Weapon")continue;
-    const order=(focus==="DPS")?orderDPS:orderTank, cap=(isCA?5:4);
+    const order=(focus==="DPS")?orderDPS:orderTank, capPer=isCA?5:4;
     for(const stat of order){
       const over=(stat==="Crit Chance"&&crit+t.CR>rules.caps.critFromGearRune)||
                  (stat==="Evasion"&&eva+t.EV>rules.caps.evaFromGearRune)||
                  (stat==="DR%"&&dr+t.DR>rules.caps.drFromGearRune);
       if(over)continue;
-      if(layout[slot].length<cap){
+      // prevent >1 cap stat per slot
+      if(["Crit Chance","Evasion","DR%"].includes(stat) &&
+         layout[slot].some(s=>s.includes("Crit Chance")||s.includes("Evasion")||s.includes("DR%"))) continue;
+      if(layout[slot].length<capPer){
         add(slot,stat);
         if(stat==="Crit Chance")crit+=t.CR;
         if(stat==="Evasion")eva+=t.EV;
@@ -185,7 +188,7 @@ function renderSlots(cls,focus,tier,best){
   // Render
   for(const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div'); div.className='slot';
-    div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${statLabel(s)}</div>`).join('');
+    div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
     box.appendChild(div);
   }
 }
