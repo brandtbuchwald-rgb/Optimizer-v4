@@ -376,12 +376,12 @@ function renderTotals(focus, tier, best){
 
   // Add purple contributions
   if (isChaosAbyss) {
-    atk += 3 * t.ATK; // Chest, Gloves, Boots purples
-    cd  += 2 * t.CD;  // Necklace, Ring purples
-    cd  += t.CD;      // Weapon purple (both DPS/Tank use Crit DMG 5th)
-    // helm/belt purple is boss/hp, handled separately in text
-  }
-
+  atk += 3 * t.ATK; // Chest, Gloves, Boots purples
+  cd  += 2 * t.CD;  // Necklace, Ring purples
+  cd  += t.CD;      // Weapon purple (DPS)
+  hp  += 2 * t.HP;  // Helm + Belt purples
+  if (focus === "Tank") hp += t.HP; // Tank weapon purple is HP%
+}
   // Render totals
   box.innerHTML = `
     <div><b>Attack Speed (gear + rune)</b> = ${(atkSpd*100).toFixed(1)}%</div>
