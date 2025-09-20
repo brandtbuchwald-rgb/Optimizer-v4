@@ -284,27 +284,50 @@ function renderTotals(best){
   const box = document.getElementById('totals');
   box.innerHTML = '';
 
-  const asGear = best.gearLines * best.tierVals.AS;
+  const tierVals = best.tierVals;
+
+  // --- Attack Speed ---
+  const asGear = best.gearLines * tierVals.AS;
   const asRune = best.rune * 0.01;
   const totalAS = asGear + asRune;
 
-  const critGearRune = Math.min(best.critLines * best.tierVals.CR, rules.caps.critFromGearRune);
-  const critWaste = Math.max(0, (best.critLines * best.tierVals.CR) - rules.caps.critFromGearRune);
+  // --- Crit Chance (gear+rune only) ---
+  const critGearRune = Math.min(best.critLines * tierVals.CR, rules.caps.critFromGearRune);
+  const critWaste = Math.max(0, (best.critLines * tierVals.CR) - rules.caps.critFromGearRune);
   const critWithPet = critGearRune + (best.critPet || 0);
 
-  const evaGearRune = Math.min(best.evaLines * best.tierVals.EV, rules.caps.evaFromGearRune);
-  const evaWaste = Math.max(0, (best.evaLines * best.tierVals.EV) - rules.caps.evaFromGearRune);
+  // --- Evasion ---
+  const evaGearRune = Math.min(best.evaLines * tierVals.EV, rules.caps.evaFromGearRune);
+  const evaWaste = Math.max(0, (best.evaLines * tierVals.EV) - rules.caps.evaFromGearRune);
 
-  const drGearRune = Math.min(best.drLines * best.tierVals.DR, rules.caps.drFromGearRune);
-  const drWaste = Math.max(0, (best.drLines * best.tierVals.DR) - rules.caps.drFromGearRune);
+  // --- DR ---
+  const drGearRune = Math.min(best.drLines * tierVals.DR, rules.caps.drFromGearRune);
+  const drWaste = Math.max(0, (best.drLines * tierVals.DR) - rules.caps.drFromGearRune);
 
+  // --- Purple bonuses (Chaos/Abyss only) ---
+  let purpleATK = 0, purpleCD = 0, purpleMD = 0, purpleHP = 0;
+  if (best.tierVals && (best.tierVals.AS === 0.14 || best.tierVals.AS === 0.16)){ 
+    // crude check: Chaos/Abyss tiers
+    purpleATK = 3 * tierVals.ATK;   // Chest, Gloves, Boots
+    purpleCD  = 2 * tierVals.CD;    // Ring, Necklace
+    purpleHP  = 2 * tierVals.HP;    // Helm, Belt
+    purpleMD  = 0;                  // only if you want to treat boss dmg separately
+  }
+
+  // --- Build totals ---
   const html = `
     <h3>Totals</h3>
     <div>Attack Speed (gear+rune) = ${(totalAS*100).toFixed(1)}%</div>
-    <div>Crit Chance (gear+rune) = ${(critGearRune*100).toFixed(1)}% ${critWaste>0 ? `(waste ${(critWaste*100).toFixed(1)}%)` : ''}</div>
+    <div>Crit Chance (gear+rune) = ${(critGearRune*100).toFixed(1)}% ${critWaste>0?`(waste ${(critWaste*100).toFixed(1)}%)`:''}</div>
     <div>Crit Chance + Pet = ${(critWithPet*100).toFixed(1)}%</div>
-    <div>Evasion (gear+rune) = ${(evaGearRune*100).toFixed(1)}% ${evaWaste>0 ? `(waste ${(evaWaste*100).toFixed(1)}%)` : ''}</div>
-    <div>DR% (gear+rune) = ${(drGearRune*100).toFixed(1)}% ${drWaste>0 ? `(waste ${(drWaste*100).toFixed(1)}%)` : ''}</div>
+    <div>Evasion (gear+rune) = ${(evaGearRune*100).toFixed(1)}% ${evaWaste>0?`(waste ${(evaWaste*100).toFixed(1)}%)`:''}</div>
+    <div>DR% (gear+rune) = ${(drGearRune*100).toFixed(1)}% ${drWaste>0?`(waste ${(drWaste*100).toFixed(1)}%)`:''}</div>
+    <hr/>
+    <div>ATK% = ${(best.atkLines*tierVals.ATK + purpleATK)*100}%</div>
+    <div>Crit DMG = ${best.cdLines*tierVals.CD + purpleCD}</div>
+    <div>Monster DMG = ${(best.mdLines*tierVals.MD + purpleMD)*100}%</div>
+    <div>HP% = ${(best.hpLines*tierVals.HP + purpleHP)*100}%</div>
+    <div>DEF% = ${(best.dfLines*tierVals.DF)*100}%</div>
   `;
   box.innerHTML = html;
 }
