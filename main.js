@@ -292,7 +292,7 @@ function renderSlots(cls, focus, tier, best) {
 
   // Filler
   const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
-  const fillerOrderTank = ["Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
+const fillerOrderTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
 
   for (const slot of rules.slots){
     if (slot==="Weapon") continue;
@@ -304,7 +304,7 @@ function renderSlots(cls, focus, tier, best) {
       if (stat==="Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
       if (stat==="Evasion"     && (evaAccum  + t.EV) > rules.caps.evaFromGearRune)  continue;
       if (stat==="DR%"         && (drAccum   + t.DR) > rules.caps.drFromGearRune)   continue;
-
+  if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) continue; // 🚫 no double cap stats
       if (tryAddLine(slot, stat)){
         if (stat==="Crit Chance") critAccum += t.CR;
         if (stat==="Evasion")     evaAccum  += t.EV;
