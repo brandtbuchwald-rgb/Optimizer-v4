@@ -68,16 +68,18 @@ const rules = {
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
-function statWithValue(label, t) {
-  const map = {
-    "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP",
-    "DEF%":"DF","DR%":"DR","Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
-  };
-  const key = map[label];
+// Map of labels to shorthand keys
+const statMap = {
+  "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP",
+  "DEF%":"DF","DR%":"DR","Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
+};
+
+// Render-only function
+function renderStat(label, t) {
+  const key = statMap[label];
   const val = t[key];
   return (typeof val === "number") ? `${label} +${(val*100).toFixed(0)}%` : label;
 }
-
 const purple = txt => `<span class="purple-stat">${txt}</span>`;
 
 // ---------- Core ----------
@@ -171,24 +173,25 @@ function renderSlots(cls, focus, tier, weap, best) {
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
   const slotHasAnyCap = arr => arr.some(st => CAP_STATS.has(st));
 
-  const tryAdd = (slot, stat) => {
-    if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) return false;
-    if (layout[slot].length >= capPerSlot(slot)) return false;
-    if (layout[slot].includes(stat)) return false;
+  function tryAdd(slot, stat) {
+  const key = statMap[stat] || stat; // use shorthand key internally
+  if (CAP_STATS.has(key) && layout[slot].some(st => CAP_STATS.has(st))) return false;
+  if (layout[slot].length >= capPerSlot(slot)) return false;
+  if (layout[slot].includes(key)) return false;
 
-    layout[slot].push(statWithValue(stat,t));
+  layout[slot].push(key);
 
-    if (stat==="Crit Chance") best.critLines++;
-    if (stat==="Evasion")     best.evaLines++;
-    if (stat==="DR%")         best.drLines++;
-    if (stat==="ATK%")        best.atkLines++;
-    if (stat==="Crit DMG")    best.cdLines++;
-    if (stat==="Monster DMG") best.mdLines++;
-    if (stat==="HP%")         best.hpLines++;
-    if (stat==="DEF%")        best.dfLines++;
-    if (stat==="ATK SPD")     best.asLines++;
-    return true;
-  };
+  if (key==="CR") best.critLines++;
+  if (key==="EV") best.evaLines++;
+  if (key==="DR") best.drLines++;
+  if (key==="ATK") best.atkLines++;
+  if (key==="CD") best.cdLines++;
+  if (key==="MD") best.mdLines++;
+  if (key==="HP") best.hpLines++;
+  if (key==="DF") best.dfLines++;
+  if (key==="AS") best.asLines++;
+  return true;
+}
 
   // Purples only for Chaos/Abyss (not PvP/Boss)
   if (isChaosAbyss && !isPvP) {
