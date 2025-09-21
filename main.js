@@ -1,12 +1,12 @@
 // ==========================
-// Rediscover Optimizer v4 — Rules-Accurate (fixed caps + DR)
+// Rediscover Optimizer v4 — Clean Fixed Build
 // ==========================
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
   const q = id => document.getElementById(id);
-  ['cls','focus','weap','gearTier','col','char','guild','secret','target','fury']
-    .forEach(id => els[id] = q(id));
+  ['cls','focus','weap','gearTier','col','char','guild','secret',
+   'target','fury'].forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
   els.runBtn.addEventListener('click', run);
 });
@@ -18,8 +18,7 @@ const rules = {
   caps: {
     critFromGearRune: 0.50,
     evaFromGearRune:  0.40,
-    drFromGearRune:   1.00,
-    critTotal:        1.00
+    drFromGearRune:   1.00
   },
 
   baseInterval: {
@@ -99,7 +98,6 @@ function run(){
   let best = null;
   const petOptions = Object.entries(rules.pets);
 
-  // Search combos
   for (let rune=0; rune<=6; rune++){
     for (const [petName, petStats] of petOptions){
       const petAS = petStats.AS;
@@ -163,16 +161,16 @@ function renderSlots(cls, focus, tier, best) {
   const capPerSlot = s => isChaosAbyss ? 5 : 4;
 
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion","DR%"]);
-  const slotHasAnyCap = arr => arr.some(s => CAP_STATS.has(s));
+  const slotHasCap = arr => arr.some(st => CAP_STATS.has(st));
 
   const canAdd = (slot, stat) => {
     if (layout[slot].length >= capPerSlot(slot)) return false;
     if (layout[slot].includes(stat)) return false;
-    if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) return false;
+    if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) return false; // one cap stat max
     return true;
   };
 
-  // Purples first
+  // Purples
   if (isChaosAbyss) {
     layout['Weapon'].push(focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS) : purple(rules.purple5thLabels.WeaponTank));
     ["Necklace","Ring","Helm","Belt","Chest","Gloves","Boots"].forEach(s => {
@@ -180,7 +178,7 @@ function renderSlots(cls, focus, tier, best) {
     });
   }
 
-  // Weapon pool
+  // Weapon
   const castLabel = (focus==="DPS")
     ? (isChaosAbyss ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
     : (isChaosAbyss ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
@@ -191,7 +189,7 @@ function renderSlots(cls, focus, tier, best) {
     : ["HP%","DEF%","DR%","ATK%","Crit DMG","Monster DMG"];
   for (const s of weaponFill) if (canAdd('Weapon', s)) layout['Weapon'].push(statWithValue(s,t));
 
-  // Assign ATK SPD
+  // ATK SPD
   let asLeft = best.gearLines;
   for (const s of rules.slots) {
     if (s!=="Weapon" && asLeft>0 && canAdd(s,"ATK SPD")) {
@@ -200,7 +198,7 @@ function renderSlots(cls, focus, tier, best) {
     }
   }
 
-  // Track totals w/ rune + pet for caps
+  // Totals with rune + pet for cap checks
   let critAccum = best.rune*0.01 + (best.critPet||0);
   let evaAccum  = best.rune*0.01;
   let drAccum   = best.rune*0.01;
@@ -219,7 +217,7 @@ function renderSlots(cls, focus, tier, best) {
     return true;
   };
 
-  // Fill slots respecting global caps
+  // Fillers
   const fillerDPS = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
   const fillerTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
 
@@ -230,7 +228,7 @@ function renderSlots(cls, focus, tier, best) {
 
     for (const stat of order) {
       if (layout[slot].length >= capacity) break;
-      if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) continue;
+      if (!canAdd(slot,stat)) continue;
       if (stat==="Crit Chance" && (critAccum+t.CR)>rules.caps.critFromGearRune) continue;
       if (stat==="Evasion" && (evaAccum+t.EV)>rules.caps.evaFromGearRune) continue;
       if (stat==="DR%" && (drAccum+t.DR)>rules.caps.drFromGearRune) continue;
@@ -274,9 +272,9 @@ function renderTotals(focus,tier,best){
 
   if (isChaosAbyss){
     atk += 3*t.ATK;
-    cd  += 3*t.CD; // 2 jewelry + weapon
+    cd  += 3*t.CD;
     if (best._focus==="Tank") hp+=t.HP;
-    hp += 2*t.HP; // helm+belt
+    hp += 2*t.HP;
   }
 
   box.innerHTML=`
