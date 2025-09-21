@@ -74,24 +74,32 @@ weaponPool: {
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
+// Which stats have numeric per-line values
 const NUMERIC_KEYS = new Set([
   "ATK%", "Crit DMG", "Monster DMG", "HP%", "DEF%", "DR%", "Evasion", "Crit Chance", "ATK SPD"
 ]);
 
+// Format one stat with its numeric value
 function statWithValue(label, t) {
   if (label.includes("purple-stat") || label.includes("Boss DMG")) return label;
   if (!NUMERIC_KEYS.has(label)) return label;
 
   const map = {
-    "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP",
-    "DEF%":"DF","DR%":"DR","Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
+    "ATK%":"ATK",
+    "Crit DMG":"CD",
+    "Monster DMG":"MD",
+    "HP%":"HP",
+    "DEF%":"DF",
+    "DR%":"DR",           // ✅ keep consistent
+    "Evasion":"EV",
+    "Crit Chance":"CR",
+    "ATK SPD":"AS"
   };
 
   const key = map[label];
   const val = t[key];
   return (typeof val === "number") ? `${label} +${(val*100).toFixed(0)}%` : label;
 }
-
 const purple = txt => `<span class="purple-stat">${txt}</span>`;
 // ---------- Core ----------
 function run(){
