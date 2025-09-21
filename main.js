@@ -332,7 +332,7 @@ function renderSlots(cls, focus, tier, best) {
   best._focus=focus;
 }
 // ---------- Totals ----------
-/function renderTotals(focus, tier, best){
+function renderTotals(focus, tier, best){
   const box=document.getElementById('totals');
   box.innerHTML='';
 
