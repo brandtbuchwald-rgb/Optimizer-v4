@@ -266,15 +266,12 @@ function renderSlots(cls, focus, tier, best) {
 
   // First pass caps
   // First pass caps
+// First pass caps (one cap stat per slot)
 for (const slot of rules.slots){
   if (slot==="Weapon") continue;
   const capacity = capPerSlot(slot);
   const hasAS = layout[slot].includes("ATK SPD");
-
-  // 🚫 Prevent multiple capped stats in same slot
-  const alreadyHasCapStat = layout[slot].some(st =>
-    st==="Crit Chance" || st==="Evasion" || st==="DR%"
-  );
+  const alreadyHasCapStat = slotHasAnyCap(layout[slot]);
 
   if (focus==="DPS"){
     if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS) {
@@ -283,19 +280,18 @@ for (const slot of rules.slots){
     if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS && layout[slot].length < capacity) {
       if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
     }
-  } else {
+  } else { // Tank
+    if (!alreadyHasCapStat && (drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity) {
+      if (tryAddLine(slot,"DR%")) drAccum += t.DR;
+    }
     if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS) {
       if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
     }
     if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS && layout[slot].length < capacity) {
       if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
     }
-    if (!alreadyHasCapStat && (drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity) {
-      if (tryAddLine(slot,"DR%")) drAccum += t.DR;
-    }
   }
 }
-
 // Filler
 const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
 const fillerOrderTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
