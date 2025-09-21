@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Purples + Caps + PvP Fix
+// Rediscover Optimizer v4 — Debug Build
 // ==========================
 
 const els = {};
@@ -59,7 +59,6 @@ const rules = {
   },
 
   weaponPool: {
-    common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"],
     castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
     castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
   }
@@ -223,12 +222,12 @@ function renderSlots(cls, focus, tier, weap, best) {
   for (const slot of rules.slots) {
     if (slot==="Weapon") continue;
     if (focus==="DPS") {
-      if ((best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
-      if ((best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
     } else {
       if ((best.drLines*t.DR) <= rules.caps.drFromGearRune)     tryAdd(slot,"DR%");
-      if ((best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
-      if ((best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
     }
   }
 
@@ -240,6 +239,7 @@ function renderSlots(cls, focus, tier, weap, best) {
     if (slot==="Weapon") continue;
     const order = (focus==="DPS") ? fillerDPS : fillerTank;
     for (const stat of order) {
+      if (layout[slot].some(st => CAP_STATS.has(st)) && CAP_STATS.has(stat)) continue;
       if (stat==="Crit Chance" && (best.critLines*t.CR) > rules.caps.critFromGearRune) continue;
       if (stat==="Evasion" && (best.evaLines*t.EV) > rules.caps.evaFromGearRune) continue;
       if (stat==="DR%" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
@@ -274,9 +274,14 @@ function renderTotals(focus,tier,best){
   let dr   = best.drLines*t.DR + best.rune*0.01;
   if (dr > rules.caps.drFromGearRune) dr = rules.caps.drFromGearRune;
 
-  crit += (+els.guildCrit.value||0)/100;
-  crit += (+els.secretCrit.value||0)/100;
-  eva  += (+els.secretEva.value||0)/100;
+  const critBuff = (+els.guildCrit.value||0)/100 + (+els.secretCrit.value||0)/100;
+  const evaBuff  = (+els.secretEva.value||0)/100;
+
+  crit = Math.min(crit, rules.caps.critFromGearRune + critBuff);
+  eva  = Math.min(eva,  rules.caps.evaFromGearRune  + evaBuff);
+
+  crit += critBuff;
+  eva  += evaBuff;
 
   let atk = best.atkLines*t.ATK;
   let cd  = best.cdLines*t.CD;
@@ -302,5 +307,9 @@ function renderTotals(focus,tier,best){
     <div><b>Monster DMG</b> = ${(md*100).toFixed(1)}%</div>
     <div><b>HP%</b> = ${(hp*100).toFixed(1)}%</div>
     <div><b>DEF%</b> = ${(df*100).toFixed(1)}%</div>
+    <hr>
+    <div style="font-size:0.9em;opacity:0.7">
+      Debug: AS=${best.asLines}, CR=${best.critLines}, EV=${best.evaLines}, DR=${best.drLines}
+    </div>
   `;
 }
