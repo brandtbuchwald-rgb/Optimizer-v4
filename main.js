@@ -220,35 +220,37 @@ function renderSlots(cls, focus, tier, weap, best) {
   }
 
   // First-pass caps
-  for (const slot of rules.slots) {
-    if (slot==="Weapon") continue;
-    if (focus==="DPS") {
-      if (!slotHasAnyCap(layout[slot]) && (best.critLines*t.CR) < rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
-      if (!slotHasAnyCap(layout[slot]) && (best.evaLines*t.EV) < rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
-    } else {
-      if ((best.drLines*t.DR) < rules.caps.drFromGearRune)     tryAdd(slot,"DR%");
-      if (!slotHasAnyCap(layout[slot]) && (best.evaLines*t.EV) < rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
-      if (!slotHasAnyCap(layout[slot]) && (best.critLines*t.CR) < rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
-    }
+  // --- First-pass caps ---
+for (const slot of rules.slots) {
+  if (slot === "Weapon") continue;
+  const hasCap = layout[slot].some(st => CAP_STATS.has(st));
+
+  if (focus === "DPS") {
+    if (!hasCap && (best.critLines*t.CR) < rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
+    if (!hasCap && (best.evaLines*t.EV) < rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+  } else {
+    if ((best.drLines*t.DR) < rules.caps.drFromGearRune) tryAdd(slot,"DR%");
+    if (!hasCap && (best.evaLines*t.EV) < rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+    if (!hasCap && (best.critLines*t.CR) < rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
   }
+}
 
-  // Fillers
-  const fillerDPS = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
-  const fillerTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
+// --- Fillers ---
+for (const slot of rules.slots) {
+  if (slot === "Weapon") continue;
+  const order = (focus==="DPS") ? fillerDPS : fillerTank;
+  for (const stat of order) {
+    if (layout[slot].length >= capPerSlot(slot)) break;
+    // block stacking of AS/CR/EV in same slot (DR is allowed)
+    if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) continue;
 
-  for (const slot of rules.slots) {
-    if (slot==="Weapon") continue;
-    const order = (focus==="DPS") ? fillerDPS : fillerTank;
-    for (const stat of order) {
-      if (layout[slot].length >= capPerSlot(slot)) break;
-      if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) continue;
-      if (stat==="Crit Chance" && (best.critLines*t.CR) >= rules.caps.critFromGearRune) continue;
-      if (stat==="Evasion" && (best.evaLines*t.EV) >= rules.caps.evaFromGearRune) continue;
-      if (stat==="DR%" && (best.drLines*t.DR) >= rules.caps.drFromGearRune) continue;
-      tryAdd(slot,stat);
-    }
+    if (stat==="Crit Chance" && (best.critLines*t.CR) >= rules.caps.critFromGearRune) continue;
+    if (stat==="Evasion" && (best.evaLines*t.EV) >= rules.caps.evaFromGearRune) continue;
+    if (stat==="DR%" && (best.drLines*t.DR) >= rules.caps.drFromGearRune) continue;
+
+    tryAdd(slot, stat);
   }
-
+}
   // Render
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
