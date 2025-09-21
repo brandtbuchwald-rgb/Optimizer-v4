@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Exclusive Cap Stats Fixed
+// Rediscover Optimizer v4 — Purples + Caps + PvP Fix
 // ==========================
 
 const els = {};
@@ -129,7 +129,7 @@ function run(){
   }
 
   renderCombo(cls, focus, weap, tier, base, target, best);
-  renderSlots(cls, focus, tier, best);
+  renderSlots(cls, focus, tier, weap, best);
   renderTotals(focus, tier, best);
 }
 
@@ -152,7 +152,7 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots ----------
-function renderSlots(cls, focus, tier, best) {
+function renderSlots(cls, focus, tier, weap, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
 
@@ -161,9 +161,14 @@ function renderSlots(cls, focus, tier, best) {
   for (const s of rules.slots) layout[s] = [];
 
   const isChaosAbyss = (tier === "Chaos" || tier==="Abyss");
-  const capPerSlot = s => isChaosAbyss ? 5 : 4;
+  const isPvP = (weap === "PvP/Boss");
 
-  // Only AS/CR/EV are mutually exclusive
+  const capPerSlot = slot => {
+    if (tier === "Primal") return 3;
+    if (tier === "Chaos" || tier === "Abyss") return 5;
+    return 4; // Original + PvP/Boss
+  };
+
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
 
   const tryAdd = (slot, stat) => {
@@ -185,18 +190,20 @@ function renderSlots(cls, focus, tier, best) {
     return true;
   };
 
-  // Purples
-  if (isChaosAbyss) {
-    tryAdd('Weapon', focus==="DPS" ? rules.purple5thLabels.WeaponDPS : rules.purple5thLabels.WeaponTank);
+  // Purples only for Chaos/Abyss (not PvP/Boss)
+  if (isChaosAbyss && !isPvP) {
+    layout['Weapon'].push(
+      focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS) : purple(rules.purple5thLabels.WeaponTank)
+    );
     ["Necklace","Ring","Helm","Belt","Chest","Gloves","Boots"].forEach(s => {
-      tryAdd(s, rules.purple5thLabels[s]);
+      layout[s].push(purple(rules.purple5thLabels[s]));
     });
   }
 
   // Weapon pool
   const castLabel = (focus==="DPS")
-    ? (isChaosAbyss ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
-    : (isChaosAbyss ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
+    ? (isChaosAbyss && !isPvP ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
+    : (isChaosAbyss && !isPvP ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
   tryAdd('Weapon', castLabel);
 
   const weaponFill = (focus==="DPS")
