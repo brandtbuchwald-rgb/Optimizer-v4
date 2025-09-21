@@ -185,10 +185,6 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots ----------
-const CAP_STATS = new Set(["Crit Chance","Evasion","DR%"]);
-function slotHasCap(slotArr) {
-  return slotArr.some(st => CAP_STATS.has(st));
-}
 function renderSlots(cls, focus, tier, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -252,8 +248,11 @@ function renderSlots(cls, focus, tier, best) {
     }
   }
 
-  // Priority lines
-  let critAccum=0,evaAccum=0,drAccum=0;
+  // Track totals with rune + pet included for caps
+  let critAccum = best.rune*0.01 + (best.critPet||0);
+  let evaAccum  = best.rune*0.01;
+  let drAccum   = best.rune*0.01;
+
   const tryAddLine = (slot, stat) => {
     if (!canAdd(slot, stat)) return false;
     layout[slot].push(statWithValue(stat, t));
@@ -268,59 +267,60 @@ function renderSlots(cls, focus, tier, best) {
     return true;
   };
 
-  /// First pass caps (strict: only one cap stat per slot)
-for (const slot of rules.slots) {
-  if (slot === "Weapon") continue;
-  const capacity = capPerSlot(slot);
-  const hasAS = layout[slot].includes("ATK SPD");
-  const hasCap = slotHasCap(layout[slot]);
+  // First pass caps
+  for (const slot of rules.slots) {
+    if (slot === "Weapon") continue;
+    const capacity = capPerSlot(slot);
+    const hasAS = layout[slot].includes("ATK SPD");
+    const hasCap = slotHasAnyCap(layout[slot]);
 
-  if (focus === "DPS") {
-    if (!hasCap && !hasAS && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
-      if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-    }
-    if (!hasCap && !hasAS && layout[slot].length < capacity && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
-      if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-    }
-  } else { // Tank
-    if (!hasCap && layout[slot].length < capacity && (drAccum + t.DR) <= rules.caps.drFromGearRune) {
-      if (tryAddLine(slot,"DR%")) drAccum += t.DR;
-    }
-    if (!hasCap && !hasAS && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
-      if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-    }
-    if (!hasCap && !hasAS && layout[slot].length < capacity && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
-      if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-    }
-  }
-}
-// Filler
-const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
-const fillerOrderTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
-
-for (const slot of rules.slots) {
-  if (slot === "Weapon") continue;
-  const capacity = capPerSlot(slot);
-  const order = (focus === "DPS") ? fillerOrderDPS : fillerOrderTank;
-
-  for (const stat of order) {
-    if (layout[slot].length >= capacity) break;
-
-    // block second cap stat
-    if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) continue;
-
-    if (stat === "Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
-    if (stat === "Evasion"     && (evaAccum + t.EV) > rules.caps.evaFromGearRune) continue;
-    if (stat === "DR%"         && (drAccum  + t.DR) > rules.caps.drFromGearRune) continue;
-
-    if (tryAddLine(slot, stat)) {
-      if (stat === "Crit Chance") critAccum += t.CR;
-      if (stat === "Evasion")     evaAccum  += t.EV;
-      if (stat === "DR%")         drAccum   += t.DR;
+    if (focus === "DPS") {
+      if (!hasCap && !hasAS && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
+        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+      }
+      if (!hasCap && !hasAS && layout[slot].length < capacity && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
+        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+      }
+    } else { // Tank
+      if (!hasCap && layout[slot].length < capacity && (drAccum + t.DR) <= rules.caps.drFromGearRune) {
+        if (tryAddLine(slot,"DR%")) drAccum += t.DR;
+      }
+      if (!hasCap && !hasAS && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
+        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+      }
+      if (!hasCap && !hasAS && layout[slot].length < capacity && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
+        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+      }
     }
   }
-}
-  // Render
+
+  // Fillers
+  const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
+  const fillerOrderTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
+
+  for (const slot of rules.slots) {
+    if (slot === "Weapon") continue;
+    const capacity = capPerSlot(slot);
+    const order = (focus === "DPS") ? fillerOrderDPS : fillerOrderTank;
+
+    for (const stat of order) {
+      if (layout[slot].length >= capacity) break;
+      if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) continue;
+
+      // Global cap checks
+      if (stat === "Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
+      if (stat === "Evasion"     && (evaAccum + t.EV) > rules.caps.evaFromGearRune) continue;
+      if (stat === "DR%"         && (drAccum  + t.DR) > rules.caps.drFromGearRune) continue;
+
+      if (tryAddLine(slot, stat)) {
+        if (stat === "Crit Chance") critAccum += t.CR;
+        if (stat === "Evasion")     evaAccum  += t.EV;
+        if (stat === "DR%")         drAccum   += t.DR;
+      }
+    }
+  }
+
+  // Render slots
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
@@ -331,10 +331,8 @@ for (const slot of rules.slots) {
   best._isChaosAbyss=isChaosAbyss;
   best._focus=focus;
 }
-
 // ---------- Totals ----------
-// ---------- Totals ----------
-function renderTotals(focus, tier, best){
+/function renderTotals(focus, tier, best){
   const box=document.getElementById('totals');
   box.innerHTML='';
 
@@ -342,38 +340,37 @@ function renderTotals(focus, tier, best){
   const isChaosAbyss=(tier==="Chaos"||tier==="Abyss");
 
   let atkSpd = best.gearLines*t.AS + best.rune*0.01;
-  let crit   = best.critLines*t.CR;
-  let eva    = best.evaLines*t.EV;
-  let dr     = best.drLines*t.DR;
+  let crit   = best.critLines*t.CR + best.rune*0.01;
+  let eva    = best.evaLines*t.EV  + best.rune*0.01;
+  let dr     = best.drLines*t.DR   + best.rune*0.01; // ✅ now includes rune
   let atk    = best.atkLines*t.ATK;
   let cd     = best.cdLines*t.CD;
   let md     = best.mdLines*t.MD;
   let hp     = best.hpLines*t.HP;
-  let df     = best.dfLines*t.DF;   // ✅ fixed: was t.DF * t.DF before
+  let df     = best.dfLines*t.DF;
+
+  // Add pet contributions
+  crit += (best.critPet||0);
 
   // Add purple contributions
   if (isChaosAbyss) {
     atk += 3 * t.ATK; // Chest, Gloves, Boots
     cd  += 2 * t.CD;  // Necklace + Ring
     cd  += t.CD;      // Weapon DPS purple
-    if (best._focus === "Tank") hp += t.HP; // ✅ Tank weapon purple adds HP
-    // helm/belt purple = Boss DMG or HP, HP included if chosen
-    hp += 2 * t.HP;
+    if (best._focus === "Tank") hp += t.HP;
+    hp += 2 * t.HP;   // Helm + Belt
   }
 
-  // Render totals
   box.innerHTML = `
     <div><b>Attack Speed (gear + rune)</b> = ${(atkSpd*100).toFixed(1)}%</div>
-    <div><b>Crit Chance (gear + rune)</b> = ${(crit*100).toFixed(1)}%</div>
-    <div><b>Crit Chance + Pet</b> = ${((crit + best.critPet) * 100).toFixed(1)}%</div>
+    <div><b>Crit Chance (gear + rune + pet)</b> = ${(crit*100).toFixed(1)}%</div>
     <div><b>Evasion (gear + rune)</b> = ${(eva*100).toFixed(1)}%</div>
     <div><b>DR% (gear + rune)</b> = ${(dr*100).toFixed(1)}%</div>
     <hr>
-    <div><b>ATK%</b> (incl. purple ATK on Chest/Gloves/Boots) = ${(atk*100).toFixed(1)}%</div>
-    <div><b>Crit DMG</b> (incl. purple on Weapon, Necklace, Ring) = ${(cd*100).toFixed(1)}</div>
-    <div><b>Monster DMG (gear)</b> = ${(md*100).toFixed(1)}%</div>
-    <div><b>Boss DMG (Helm/Belt 5th)</b> = shown as choice vs HP%</div>
-    <div><b>HP%</b> (incl. purple on Helm/Belt and Tank Weapon) = ${(hp*100).toFixed(1)}%</div>
+    <div><b>ATK%</b> = ${(atk*100).toFixed(1)}%</div>
+    <div><b>Crit DMG</b> = ${(cd*100).toFixed(1)}%</div>
+    <div><b>Monster DMG</b> = ${(md*100).toFixed(1)}%</div>
+    <div><b>HP%</b> = ${(hp*100).toFixed(1)}%</div>
     <div><b>DEF%</b> = ${(df*100).toFixed(1)}%</div>
   `;
 }
