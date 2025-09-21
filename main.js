@@ -13,6 +13,7 @@ window.addEventListener('DOMContentLoaded', () => {
 
 // ---------- Master Rules (from Rediscover Build Generator 2.0 PDF) ----------
 // ---------- Master Rules (from Rediscover Build Generator 2.0 PDF) ----------
+// ---------- Master Rules (from Rediscover Build Generator 2.0 PDF) ----------
 const rules = {
   // Render order
   slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
@@ -65,12 +66,14 @@ const rules = {
 
   // Weapon stat pools (no AS/CR/EV on weapons)
   // Note: Cast values differ by Chaos/Abyss vs others
-  // Weapon stat pools (no AS/CR/EV on weapons)
-weaponPool: {
-  common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"], // ✅ DR% not "Damage Reduction"
-  castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
-  castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
-},
+  weaponPool: {
+    common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"], // ✅ DR% not "Damage Reduction"
+    castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
+    castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
+  }
+}; // ✅ CLOSE rules object here
+
+// ---------- Helpers ----------
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
@@ -90,7 +93,7 @@ function statWithValue(label, t) {
     "Monster DMG":"MD",
     "HP%":"HP",
     "DEF%":"DF",
-    "DR%":"DR",           // ✅ keep consistent
+    "DR%":"DR",           
     "Evasion":"EV",
     "Crit Chance":"CR",
     "ATK SPD":"AS"
@@ -100,6 +103,7 @@ function statWithValue(label, t) {
   const val = t[key];
   return (typeof val === "number") ? `${label} +${(val*100).toFixed(0)}%` : label;
 }
+
 const purple = txt => `<span class="purple-stat">${txt}</span>`;
 // ---------- Core ----------
 function run(){
