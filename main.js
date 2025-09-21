@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Clean, Fixed, Cap-Safe
+// Rediscover Optimizer v4 — Correct Cap Handling
 // ==========================
 
 const els = {};
@@ -163,13 +163,28 @@ function renderSlots(cls, focus, tier, best) {
   const isChaosAbyss = (tier === "Chaos" || tier==="Abyss");
   const capPerSlot = s => isChaosAbyss ? 5 : 4;
 
-  const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion","DR%"]);
+  // Only AS/CR/EV are mutually exclusive
+  const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
   const slotHasCap = arr => arr.some(st => CAP_STATS.has(st));
 
   const canAdd = (slot, stat) => {
     if (layout[slot].length >= capPerSlot(slot)) return false;
     if (layout[slot].includes(stat)) return false;
-    if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) return false; // only one cap stat per slot
+    if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) return false;
+    return true;
+  };
+
+  const tryAdd = (slot, stat) => {
+    if (!canAdd(slot,stat)) return false;
+    layout[slot].push(statWithValue(stat,t));
+    if (stat==="Crit Chance") best.critLines++;
+    if (stat==="Evasion")     best.evaLines++;
+    if (stat==="DR%")         best.drLines++;
+    if (stat==="ATK%")        best.atkLines++;
+    if (stat==="Crit DMG")    best.cdLines++;
+    if (stat==="Monster DMG") best.mdLines++;
+    if (stat==="HP%")         best.hpLines++;
+    if (stat==="DEF%")        best.dfLines++;
     return true;
   };
 
@@ -181,66 +196,45 @@ function renderSlots(cls, focus, tier, best) {
     });
   }
 
-  // Weapon
+  // Weapon pool
   const castLabel = (focus==="DPS")
     ? (isChaosAbyss ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
     : (isChaosAbyss ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
-  if (canAdd('Weapon', castLabel)) layout['Weapon'].push(castLabel);
+  tryAdd('Weapon', castLabel);
 
   const weaponFill = (focus==="DPS")
     ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"]
     : ["HP%","DEF%","DR%","ATK%","Crit DMG","Monster DMG"];
-  for (const s of weaponFill) if (canAdd('Weapon', s)) layout['Weapon'].push(statWithValue(s,t));
+  for (const s of weaponFill) tryAdd('Weapon', s);
 
-  // ATK SPD
+  // ATK SPD lines
   let asLeft = best.gearLines;
   for (const s of rules.slots) {
     if (s!=="Weapon" && asLeft>0 && canAdd(s,"ATK SPD")) {
-      layout[s].push(statWithValue("ATK SPD",t));
+      tryAdd(s,"ATK SPD");
       asLeft--;
     }
   }
 
-  // Totals with rune + pet for cap checks
-  let critAccum = best.rune*0.01 + (best.critPet||0);
-  let evaAccum  = best.rune*0.01;
-  let drAccum   = best.rune*0.01;
-
-  const tryAdd = (slot, stat) => {
-    if (!canAdd(slot,stat)) return false;
-    layout[slot].push(statWithValue(stat,t));
-    if (stat==="Crit Chance") best.critLines++;
-    if (stat==="Evasion") best.evaLines++;
-    if (stat==="DR%") best.drLines++;
-    if (stat==="ATK%") best.atkLines++;
-    if (stat==="Crit DMG") best.cdLines++;
-    if (stat==="Monster DMG") best.mdLines++;
-    if (stat==="HP%") best.hpLines++;
-    if (stat==="DEF%") best.dfLines++;
-    return true;
-  };
-
-  // First-pass caps (enforce one per slot)
+  // First-pass cap assignment
   for (const slot of rules.slots) {
     if (slot==="Weapon") continue;
-    const hasAS = layout[slot].includes("ATK SPD");
-
     if (focus==="DPS") {
-      if (!slotHasCap(layout[slot]) && !hasAS && (critAccum+t.CR) <= rules.caps.critFromGearRune) {
-        if (tryAdd(slot,"Crit Chance")) critAccum+=t.CR;
+      if (canAdd(slot,"Crit Chance") && (best.critLines*t.CR) <= rules.caps.critFromGearRune) {
+        tryAdd(slot,"Crit Chance");
       }
-      if (!slotHasCap(layout[slot]) && !hasAS && (evaAccum+t.EV) <= rules.caps.evaFromGearRune) {
-        if (tryAdd(slot,"Evasion")) evaAccum+=t.EV;
+      if (canAdd(slot,"Evasion") && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune) {
+        tryAdd(slot,"Evasion");
       }
-    } else { // Tank
-      if (!slotHasCap(layout[slot]) && (drAccum+t.DR) <= rules.caps.drFromGearRune) {
-        if (tryAdd(slot,"DR%")) drAccum+=t.DR;
+    } else {
+      if (canAdd(slot,"DR%") && (best.drLines*t.DR) <= rules.caps.drFromGearRune) {
+        tryAdd(slot,"DR%");
       }
-      if (!slotHasCap(layout[slot]) && !hasAS && (evaAccum+t.EV) <= rules.caps.evaFromGearRune) {
-        if (tryAdd(slot,"Evasion")) evaAccum+=t.EV;
+      if (canAdd(slot,"Evasion") && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune) {
+        tryAdd(slot,"Evasion");
       }
-      if (!slotHasCap(layout[slot]) && !hasAS && (critAccum+t.CR) <= rules.caps.critFromGearRune) {
-        if (tryAdd(slot,"Crit Chance")) critAccum+=t.CR;
+      if (canAdd(slot,"Crit Chance") && (best.critLines*t.CR) <= rules.caps.critFromGearRune) {
+        tryAdd(slot,"Crit Chance");
       }
     }
   }
@@ -252,21 +246,16 @@ function renderSlots(cls, focus, tier, best) {
   for (const slot of rules.slots) {
     if (slot==="Weapon") continue;
     const order = (focus==="DPS") ? fillerDPS : fillerTank;
-
     for (const stat of order) {
       if (!canAdd(slot,stat)) continue;
-      if (stat==="Crit Chance" && (critAccum+t.CR) > rules.caps.critFromGearRune) continue;
-      if (stat==="Evasion" && (evaAccum+t.EV) > rules.caps.evaFromGearRune) continue;
-      if (stat==="DR%" && (drAccum+t.DR) > rules.caps.drFromGearRune) continue;
-
-      if (tryAdd(slot,stat)) {
-        if (stat==="Crit Chance") critAccum+=t.CR;
-        if (stat==="Evasion") evaAccum+=t.EV;
-        if (stat==="DR%") drAccum+=t.DR;
-      }
+      if (stat==="Crit Chance" && (best.critLines*t.CR) > rules.caps.critFromGearRune) continue;
+      if (stat==="Evasion" && (best.evaLines*t.EV) > rules.caps.evaFromGearRune) continue;
+      if (stat==="DR%" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
+      tryAdd(slot,stat);
     }
   }
 
+  // Render
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
@@ -288,17 +277,15 @@ function renderTotals(focus,tier,best){
 
   let atkSpd = best.gearLines*t.AS + best.rune*0.01;
 
-  // Crit/Eva/DR from gear+rune+pet
   let crit = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
   let eva  = best.evaLines*t.EV + best.rune*0.01;
   let dr   = best.drLines*t.DR + best.rune*0.01;
+  if (dr > rules.caps.drFromGearRune) dr = rules.caps.drFromGearRune; // clamp to 100%
 
-  // Buff/secret extras (not capped)
   crit += (+els.guildCrit.value||0)/100;
   crit += (+els.secretCrit.value||0)/100;
   eva  += (+els.secretEva.value||0)/100;
 
-  // Other stats
   let atk = best.atkLines*t.ATK;
   let cd  = best.cdLines*t.CD;
   let md  = best.mdLines*t.MD;
@@ -307,7 +294,7 @@ function renderTotals(focus,tier,best){
 
   if (isChaosAbyss){
     atk += 3*t.ATK;
-    cd  += 3*t.CD; // 2 jewelry + weapon
+    cd  += 3*t.CD;
     if (best._focus==="Tank") hp+=t.HP;
     hp += 2*t.HP;
   }
