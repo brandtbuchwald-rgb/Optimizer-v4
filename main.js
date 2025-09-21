@@ -265,54 +265,62 @@ function renderSlots(cls, focus, tier, best) {
   };
 
   // First pass caps
-  for (const slot of rules.slots){
-    if (slot==="Weapon") continue;
-    const capacity = capPerSlot(slot);
-    const hasAS = layout[slot].includes("ATK SPD");
+  // First pass caps
+for (const slot of rules.slots){
+  if (slot==="Weapon") continue;
+  const capacity = capPerSlot(slot);
+  const hasAS = layout[slot].includes("ATK SPD");
 
-    if (focus==="DPS"){
-      if ((critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS) {
-        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-      }
-      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS && layout[slot].length < capacity) {
-        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-      }
-    } else {
-      if ((evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS) {
-        if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
-      }
-      if ((critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS && layout[slot].length < capacity) {
-        if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
-      }
-      if ((drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity) {
-        if (tryAddLine(slot,"DR%")) drAccum += t.DR;
-      }
+  // 🚫 Prevent multiple capped stats in same slot
+  const alreadyHasCapStat = layout[slot].some(st =>
+    st==="Crit Chance" || st==="Evasion" || st==="DR%"
+  );
+
+  if (focus==="DPS"){
+    if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS) {
+      if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+    }
+    if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS && layout[slot].length < capacity) {
+      if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+    }
+  } else {
+    if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS) {
+      if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
+    }
+    if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS && layout[slot].length < capacity) {
+      if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
+    }
+    if (!alreadyHasCapStat && (drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity) {
+      if (tryAddLine(slot,"DR%")) drAccum += t.DR;
     }
   }
+}
 
-  // Filler
-  const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
+// Filler
+const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
 const fillerOrderTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
 
-  for (const slot of rules.slots){
-    if (slot==="Weapon") continue;
-    const order = (focus==="DPS") ? fillerOrderDPS : fillerOrderTank;
-    const capacity = capPerSlot(slot);
+for (const slot of rules.slots){
+  if (slot==="Weapon") continue;
+  const order = (focus==="DPS") ? fillerOrderDPS : fillerOrderTank;
+  const capacity = capPerSlot(slot);
 
-    for (const stat of order){
-      if (layout[slot].length >= capacity) break;
-      if (stat==="Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
-      if (stat==="Evasion"     && (evaAccum  + t.EV) > rules.caps.evaFromGearRune)  continue;
-      if (stat==="DR%"         && (drAccum   + t.DR) > rules.caps.drFromGearRune)   continue;
-  if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) continue; // 🚫 no double cap stats
-      if (tryAddLine(slot, stat)){
-        if (stat==="Crit Chance") critAccum += t.CR;
-        if (stat==="Evasion")     evaAccum  += t.EV;
-        if (stat==="DR%")         drAccum   += t.DR;
-      }
+  for (const stat of order){
+    if (layout[slot].length >= capacity) break;
+    if (stat==="Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
+    if (stat==="Evasion"     && (evaAccum  + t.EV) > rules.caps.evaFromGearRune)  continue;
+    if (stat==="DR%"         && (drAccum   + t.DR) > rules.caps.drFromGearRune)   continue;
+
+    // 🚫 no double-cap stats in filler either
+    if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) continue;
+
+    if (tryAddLine(slot, stat)){
+      if (stat==="Crit Chance") critAccum += t.CR;
+      if (stat==="Evasion")     evaAccum  += t.EV;
+      if (stat==="DR%")         drAccum   += t.DR;
     }
   }
-
+}
   // Render
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
