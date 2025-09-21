@@ -185,6 +185,10 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots ----------
+const CAP_STATS = new Set(["Crit Chance","Evasion","DR%"]);
+function slotHasCap(slotArr) {
+  return slotArr.some(st => CAP_STATS.has(st));
+}
 function renderSlots(cls, focus, tier, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -264,30 +268,28 @@ function renderSlots(cls, focus, tier, best) {
     return true;
   };
 
-  // First pass caps
-  // First pass caps
-// First pass caps (one cap stat per slot)
-for (const slot of rules.slots){
-  if (slot==="Weapon") continue;
+  /// First pass caps (strict: only one cap stat per slot)
+for (const slot of rules.slots) {
+  if (slot === "Weapon") continue;
   const capacity = capPerSlot(slot);
   const hasAS = layout[slot].includes("ATK SPD");
-  const alreadyHasCapStat = slotHasAnyCap(layout[slot]);
+  const hasCap = slotHasCap(layout[slot]);
 
-  if (focus==="DPS"){
-    if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS) {
+  if (focus === "DPS") {
+    if (!hasCap && !hasAS && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
       if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
     }
-    if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS && layout[slot].length < capacity) {
+    if (!hasCap && !hasAS && layout[slot].length < capacity && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
       if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
     }
   } else { // Tank
-    if (!alreadyHasCapStat && (drAccum + t.DR) <= rules.caps.drFromGearRune && layout[slot].length < capacity) {
+    if (!hasCap && layout[slot].length < capacity && (drAccum + t.DR) <= rules.caps.drFromGearRune) {
       if (tryAddLine(slot,"DR%")) drAccum += t.DR;
     }
-    if (!alreadyHasCapStat && (evaAccum + t.EV) <= rules.caps.evaFromGearRune && !hasAS) {
+    if (!hasCap && !hasAS && (evaAccum + t.EV) <= rules.caps.evaFromGearRune) {
       if (tryAddLine(slot,"Evasion")) evaAccum += t.EV;
     }
-    if (!alreadyHasCapStat && (critAccum + t.CR) <= rules.caps.critFromGearRune && !hasAS && layout[slot].length < capacity) {
+    if (!hasCap && !hasAS && layout[slot].length < capacity && (critAccum + t.CR) <= rules.caps.critFromGearRune) {
       if (tryAddLine(slot,"Crit Chance")) critAccum += t.CR;
     }
   }
@@ -296,24 +298,25 @@ for (const slot of rules.slots){
 const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
 const fillerOrderTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
 
-for (const slot of rules.slots){
-  if (slot==="Weapon") continue;
-  const order = (focus==="DPS") ? fillerOrderDPS : fillerOrderTank;
+for (const slot of rules.slots) {
+  if (slot === "Weapon") continue;
   const capacity = capPerSlot(slot);
+  const order = (focus === "DPS") ? fillerOrderDPS : fillerOrderTank;
 
-  for (const stat of order){
+  for (const stat of order) {
     if (layout[slot].length >= capacity) break;
-    if (stat==="Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
-    if (stat==="Evasion"     && (evaAccum  + t.EV) > rules.caps.evaFromGearRune)  continue;
-    if (stat==="DR%"         && (drAccum   + t.DR) > rules.caps.drFromGearRune)   continue;
 
-    // 🚫 no double-cap stats in filler either
-    if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) continue;
+    // block second cap stat
+    if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) continue;
 
-    if (tryAddLine(slot, stat)){
-      if (stat==="Crit Chance") critAccum += t.CR;
-      if (stat==="Evasion")     evaAccum  += t.EV;
-      if (stat==="DR%")         drAccum   += t.DR;
+    if (stat === "Crit Chance" && (critAccum + t.CR) > rules.caps.critFromGearRune) continue;
+    if (stat === "Evasion"     && (evaAccum + t.EV) > rules.caps.evaFromGearRune) continue;
+    if (stat === "DR%"         && (drAccum  + t.DR) > rules.caps.drFromGearRune) continue;
+
+    if (tryAddLine(slot, stat)) {
+      if (stat === "Crit Chance") critAccum += t.CR;
+      if (stat === "Evasion")     evaAccum  += t.EV;
+      if (stat === "DR%")         drAccum   += t.DR;
     }
   }
 }
