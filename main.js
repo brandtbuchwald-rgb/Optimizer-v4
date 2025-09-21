@@ -261,26 +261,38 @@ function renderTotals(focus,tier,best){
   const isChaosAbyss=(tier==="Chaos"||tier==="Abyss");
 
   let atkSpd = best.gearLines*t.AS + best.rune*0.01;
-  let crit   = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
-  let eva    = best.evaLines*t.EV + best.rune*0.01;
-  let dr     = best.drLines*t.DR + best.rune*0.01;
-  let atk    = best.atkLines*t.ATK;
-  let cd     = best.cdLines*t.CD;
-  let md     = best.mdLines*t.MD;
-  let hp     = best.hpLines*t.HP;
-  let df     = best.dfLines*t.DF;
+
+  // Base crit/eva/dr from gear+rune (caps respected in slot filling)
+  let crit = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
+  let eva  = best.evaLines*t.EV + best.rune*0.01;
+  let dr   = best.drLines*t.DR + best.rune*0.01;
+
+  // Buff/secret extras (do not count toward caps)
+  const guildCrit  = (+els.guildCrit.value||0)/100;
+  const secretCrit = (+els.secretCrit.value||0)/100;
+  const secretEva  = (+els.secretEva.value||0)/100;
+
+  crit += guildCrit + secretCrit;
+  eva  += secretEva;
+
+  // Normal stats
+  let atk = best.atkLines*t.ATK;
+  let cd  = best.cdLines*t.CD;
+  let md  = best.mdLines*t.MD;
+  let hp  = best.hpLines*t.HP;
+  let df  = best.dfLines*t.DF;
 
   if (isChaosAbyss){
     atk += 3*t.ATK;
-    cd  += 3*t.CD;
+    cd  += 3*t.CD; // 2 jewelry + weapon
     if (best._focus==="Tank") hp+=t.HP;
-    hp += 2*t.HP;
+    hp += 2*t.HP; // helm+belt
   }
 
   box.innerHTML=`
     <div><b>Attack Speed</b> = ${(atkSpd*100).toFixed(1)}%</div>
-    <div><b>Crit Chance</b> = ${(crit*100).toFixed(1)}%</div>
-    <div><b>Evasion</b> = ${(eva*100).toFixed(1)}%</div>
+    <div><b>Crit Chance (incl. buffs)</b> = ${(crit*100).toFixed(1)}%</div>
+    <div><b>Evasion (incl. secret tech)</b> = ${(eva*100).toFixed(1)}%</div>
     <div><b>DR%</b> = ${(dr*100).toFixed(1)}%</div>
     <hr>
     <div><b>ATK%</b> = ${(atk*100).toFixed(1)}%</div>
