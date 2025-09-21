@@ -4,9 +4,9 @@
 
 const els = {};
 window.addEventListener('DOMContentLoaded', () => {
-  const q = id => document.getElementById(id);
-  ['cls','focus','weap','gearTier','col','char','guild','secret',
-   'target','fury'].forEach(id => els[id] = q(id));
+  const q = id => document.getElementById(id);['cls','focus','weap','gearTier','col','char',
+ 'guild','secret','guildCrit','secretCrit','secretEva',
+ 'target','fury'].forEach(id => els[id] = q(id));
   els.runBtn = document.getElementById('runBtn');
   els.runBtn.addEventListener('click', run);
 });
