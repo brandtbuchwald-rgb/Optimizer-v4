@@ -334,6 +334,7 @@ for (const slot of rules.slots){
 }
 
 // ---------- Totals ----------
+// ---------- Totals ----------
 function renderTotals(focus, tier, best){
   const box=document.getElementById('totals');
   box.innerHTML='';
@@ -349,17 +350,18 @@ function renderTotals(focus, tier, best){
   let cd     = best.cdLines*t.CD;
   let md     = best.mdLines*t.MD;
   let hp     = best.hpLines*t.HP;
-  let df     = best.dfLines*t.DF   * t.DF;
+  let df     = best.dfLines*t.DF;   // ✅ fixed: was t.DF * t.DF before
 
-// Add purple contributions
-if (isChaosAbyss) {
-  atk += 3 * t.ATK; // Chest, Gloves, Boots
-  cd  += 2 * t.CD;  // Necklace + Ring
-  cd  += t.CD;      // Weapon DPS purple
-  if (best._focus === "Tank") hp += t.HP; // ✅ Tank weapon purple adds HP
-  // helm/belt purple = Boss DMG or HP, HP included if chosen
-  hp += 2 * t.HP; // ✅ count helm + belt HP% option
-}
+  // Add purple contributions
+  if (isChaosAbyss) {
+    atk += 3 * t.ATK; // Chest, Gloves, Boots
+    cd  += 2 * t.CD;  // Necklace + Ring
+    cd  += t.CD;      // Weapon DPS purple
+    if (best._focus === "Tank") hp += t.HP; // ✅ Tank weapon purple adds HP
+    // helm/belt purple = Boss DMG or HP, HP included if chosen
+    hp += 2 * t.HP;
+  }
+
   // Render totals
   box.innerHTML = `
     <div><b>Attack Speed (gear + rune)</b> = ${(atkSpd*100).toFixed(1)}%</div>
