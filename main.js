@@ -1,70 +1,157 @@
+/// ==========================
+// Rediscover Optimizer v4 — Debug Build
 // ==========================
-// Rediscover Optimizer v4 (full, with caps + debug)
-// ==========================
 
-let rules;
-let els = {};
+const els = {};
+window.addEventListener('DOMContentLoaded', () => {
+  const q = id => document.getElementById(id);
+  [
+    'cls','focus','weap','gearTier','col','char',
+    'guild','secret','guildCrit','secretCrit','secretEva',
+    'target','fury'
+  ].forEach(id => els[id] = q(id));
+  els.runBtn = document.getElementById('runBtn');
+  els.runBtn.addEventListener('click', run);
+});
 
-async function init() {
-  rules = await loadGearRules();
-  els.cls   = document.getElementById('cls');
-  els.focus = document.getElementById('focus');
-  els.tier  = document.getElementById('tier');
-  els.weap  = document.getElementById('weap');
-  els.rune  = document.getElementById('rune');
-  els.pet   = document.getElementById('pet');
-  els.guildCrit  = document.getElementById('guildCrit');
-  els.secretCrit = document.getElementById('secretCrit');
-  els.secretEva  = document.getElementById('secretEva');
+// ---------- Master Rules ----------
+const rules = {
+  slots: ["Weapon","Necklace","Helm","Chest","Gloves","Boots","Belt","Ring"],
 
-  document.getElementById('optBtn').onclick = optimize;
-}
-window.onload = init;
+  caps: {
+    critFromGearRune: 0.50,
+    evaFromGearRune:  0.40,
+    drFromGearRune:   1.00
+  },
 
-async function loadGearRules() {
-  const res = await fetch('assets/gearRules.json');
-  return await res.json();
-}
+  baseInterval: {
+    Original:{Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Primal:  {Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Chaos:   {Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    Abyss:   {Berserker:2.0,Paladin:2.4,Ranger:1.8,Sorcerer:2.2},
+    "PvP/Boss":{Berserker:2.2,Paladin:2.5,Ranger:2.0,Sorcerer:2.3}
+  },
 
-// ---- helpers ----
-function purple(label) {
-  return `<span style="color:purple;font-weight:bold">${label}</span>`;
-}
-function statWithValue(stat, t) {
-  switch(stat) {
-    case "ATK SPD": return `${stat} +${(t.AS*100).toFixed(0)}%`;
-    case "Crit Chance": return `${stat} +${(t.CR*100).toFixed(0)}%`;
-    case "Evasion": return `${stat} +${(t.EV*100).toFixed(0)}%`;
-    case "DR%": return `${stat} +${(t.DR*100).toFixed(0)}%`;
-    case "ATK%": return `${stat} +${(t.ATK*100).toFixed(0)}%`;
-    case "Crit DMG": return `${stat} +${(t.CD*100).toFixed(0)}%`;
-    case "Monster DMG": return `${stat} +${(t.MD*100).toFixed(0)}%`;
-    case "HP%": return `${stat} +${(t.HP*100).toFixed(0)}%`;
-    case "DEF%": return `${stat} +${(t.DF*100).toFixed(0)}%`;
-    default: return stat;
+  lineValues: {
+    Primal:   {AS:0.12, CR:0.12, EV:0.12, ATK:0.23, CD:0.35, MD:0.35, HP:0.23, DF:0.23, DR:0.14},
+    Original: {AS:0.12, CR:0.12, EV:0.12, ATK:0.23, CD:0.35, MD:0.35, HP:0.23, DF:0.23, DR:0.17},
+    Chaos:    {AS:0.14, CR:0.14, EV:0.14, ATK:0.26, CD:0.40, MD:0.40, HP:0.26, DF:0.26, DR:0.19},
+    Abyss:    {AS:0.16, CR:0.16, EV:0.16, ATK:0.29, CD:0.45, MD:0.45, HP:0.29, DF:0.29, DR:0.21}
+  },
+
+  purple5thLabels: {
+    Necklace: "Crit DMG",
+    Ring:     "Crit DMG",
+    Helm:     "Boss DMG / HP%",
+    Belt:     "Boss DMG / HP%",
+    WeaponDPS: "Crit DMG",
+    WeaponTank: "HP%",
+    Chest:   "ATK%",
+    Gloves:  "ATK%",
+    Boots:   "ATK%"
+  },
+
+  pets: {
+    None:{AS:0.00, CR:0.00},
+    B:{AS:0.06, CR:0.06},
+    A:{AS:0.09, CR:0.09},
+    S:{AS:0.12, CR:0.12}
+  },
+
+  weaponPool: {
+    castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
+    castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
   }
+};
+
+// ---------- Helpers ----------
+const fmtPct = p => (p*100).toFixed(1) + '%';
+const fmtSec = s => s.toFixed(3) + 's';
+
+function statWithValue(label, t) {
+  const map = {
+    "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP",
+    "DEF%":"DF","DR%":"DR","Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
+  };
+  const key = map[label];
+  const val = t[key];
+  return (typeof val === "number") ? `${label} +${(val*100).toFixed(0)}%` : label;
 }
 
-// ---- main optimize ----
-function optimize() {
-  const cls   = els.cls.value;
-  const focus = els.focus.value;
-  const tier  = els.tier.value;
+const purple = txt => `<span class="purple-stat">${txt}</span>`;
 
-  // baseline values
-  const best = {
-    tierVals: rules.tierVals[tier],
-    rune: (+els.rune.value||0)/100,
-    critPet: parseFloat(els.pet.value)||0,
-    gearLines: 2 // adjust if needed
-  };
+// ---------- Core ----------
+function run(){
+  const cls    = els.cls.value;
+  const focus  = els.focus.value;
+  const weap   = els.weap.value;
+  const tier   = els.gearTier.value;
+  const statColor = +els.col.value;
+  const charMod   = +els.char.value;
+  const guildAS   = (+els.guild.value||0)/100;
+  const secretAS  = (+els.secret.value||0)/100;
+  const target    = +els.target.value || 0.25;
+  const furyMult  = (els.fury.checked && cls === 'Berserker') ? 1.25 : 1.0;
 
-  renderSlots(cls, focus, tier, best);
+  const base = rules.baseInterval[weap][cls];
+  const tierVals = rules.lineValues[tier];
+  const passiveAS = statColor + charMod + guildAS + secretAS;
+
+  let best = null;
+  const petOptions = Object.entries(rules.pets);
+
+  for (let rune=0; rune<=6; rune++){
+    for (const [petName, petStats] of petOptions){
+      const petAS = petStats.AS;
+      const petCR = petStats.CR;
+      for (let gearLines=0; gearLines<=8; gearLines++){
+        const totalAS = passiveAS + rune*0.01 + petAS + gearLines*tierVals.AS;
+        const finalInterval = base * (1 - totalAS) * furyMult;
+        if (finalInterval <= target){
+          const requiredAS = 1 - (target / base);
+          const waste = totalAS - requiredAS;
+          if (!best || gearLines < best.gearLines || (gearLines === best.gearLines && waste < best.waste)){
+            best = {gearLines, rune, quick:0, petName, petAS, critPet:petCR,
+              totalAS, finalInterval, waste, tierVals,
+              critLines:0, evaLines:0, drLines:0, atkLines:0, cdLines:0, mdLines:0, hpLines:0, dfLines:0, asLines:0};
+          }
+        }
+      }
+    }
+  }
+
+  if (!best){
+    document.getElementById('summary').innerHTML = "<b>No valid combo reaches the target interval.</b>";
+    document.getElementById('slots').innerHTML = '';
+    document.getElementById('totals').innerHTML = '';
+    return;
+  }
+
+  renderCombo(cls, focus, weap, tier, base, target, best);
+  renderSlots(cls, focus, tier, weap, best);
   renderTotals(focus, tier, best);
 }
 
-// ---- render slots ----
-function renderSlots(cls, focus, tier, best) {
+// ---------- Summary ----------
+function renderCombo(cls,focus,weap,tier,base,target,best){
+  const sum = document.getElementById('summary');
+  sum.innerHTML = `
+    <h3>Optimal Combo</h3>
+    <div>${cls} (${focus}) | Weapon tier: ${weap} | Gear tier: ${tier}</div>
+    <div>Base Interval: ${fmtSec(base)} → Target: ${fmtSec(target)}</div>
+    <ul>
+      <li>${best.gearLines} gear line(s) ATK SPD @ ${fmtPct(best.tierVals.AS)} each = ${fmtPct(best.gearLines*best.tierVals.AS)}</li>
+      <li>Rune ${best.rune}%</li>
+      <li>Pet ${best.petName} (AS ${fmtPct(best.petAS)}, Crit ${fmtPct(best.critPet||0)})</li>
+    </ul>
+    <div>= ${fmtPct(best.totalAS)} total → Cap reached at ${fmtSec(target)}</div>
+    <div>Waste: ${fmtPct(best.waste)}</div>
+    <hr/>
+  `;
+}
+
+// ---------- Slots ----------
+function renderSlots(cls, focus, tier, weap, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
 
@@ -72,146 +159,141 @@ function renderSlots(cls, focus, tier, best) {
   const layout = {};
   for (const s of rules.slots) layout[s] = [];
 
-  const isChaosAbyss = (tier === "Chaos" || tier === "Abyss");
-  const capPerSlot = slot => isChaosAbyss ? 5 : (tier==="Primal" ? 3 : 4);
+  const isChaosAbyss = (tier === "Chaos" || tier==="Abyss");
+  const isPvP = (weap === "PvP/Boss");
+
+  const capPerSlot = slot => {
+    if (tier === "Primal") return 3;
+    if (tier === "Chaos" || tier === "Abyss") return 5;
+    return 4; // Original + PvP/Boss
+  };
 
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
-  const slotHasAnyCap = arr => arr.some(s => CAP_STATS.has(s));
 
-  const canAdd = (slot, stat) => {
+  const tryAdd = (slot, stat) => {
+    if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) return false;
     if (layout[slot].length >= capPerSlot(slot)) return false;
     if (layout[slot].includes(stat)) return false;
-    if (CAP_STATS.has(stat) && slotHasAnyCap(layout[slot])) return false;
+
+    layout[slot].push(statWithValue(stat,t));
+
+    if (stat==="Crit Chance") best.critLines++;
+    if (stat==="Evasion")     best.evaLines++;
+    if (stat==="DR%")         best.drLines++;
+    if (stat==="ATK%")        best.atkLines++;
+    if (stat==="Crit DMG")    best.cdLines++;
+    if (stat==="Monster DMG") best.mdLines++;
+    if (stat==="HP%")         best.hpLines++;
+    if (stat==="DEF%")        best.dfLines++;
+    if (stat==="ATK SPD")     best.asLines++;
     return true;
   };
 
-  // Purples
-  if (isChaosAbyss) {
+  // Purples only for Chaos/Abyss (not PvP/Boss)
+  if (isChaosAbyss && !isPvP) {
     layout['Weapon'].push(
-      focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS)
-                    : purple(rules.purple5thLabels.WeaponTank)
+      focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS) : purple(rules.purple5thLabels.WeaponTank)
     );
-    layout['Necklace'].push(purple(rules.purple5thLabels.Necklace));
-    layout['Ring'].push(purple(rules.purple5thLabels.Ring));
-    layout['Helm'].push(purple(rules.purple5thLabels.Helm));
-    layout['Belt'].push(purple(rules.purple5thLabels.Belt));
-    layout['Chest'].push(purple(rules.purple5thLabels.Chest));
-    layout['Gloves'].push(purple(rules.purple5thLabels.Gloves));
-    layout['Boots'].push(purple(rules.purple5thLabels.Boots));
+    ["Necklace","Ring","Helm","Belt","Chest","Gloves","Boots"].forEach(s => {
+      layout[s].push(purple(rules.purple5thLabels[s]));
+    });
   }
 
   // Weapon pool
   const castLabel = (focus==="DPS")
-    ? (isChaosAbyss ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
-    : (isChaosAbyss ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
-  if (canAdd('Weapon', castLabel)) layout['Weapon'].push(castLabel);
+    ? (isChaosAbyss && !isPvP ? rules.weaponPool.castDPS.chaosAbyss : rules.weaponPool.castDPS.normal)
+    : (isChaosAbyss && !isPvP ? rules.weaponPool.castTank.chaosAbyss : rules.weaponPool.castTank.normal);
+  tryAdd('Weapon', castLabel);
 
-  const weaponFillPriority = (focus==="DPS")
+  const weaponFill = (focus==="DPS")
     ? ["ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"]
     : ["HP%","DEF%","DR%","ATK%","Crit DMG","Monster DMG"];
-  for (const stat of weaponFillPriority) {
-    if (canAdd('Weapon', stat)) layout['Weapon'].push(statWithValue(stat, t));
-  }
+  for (const s of weaponFill) tryAdd('Weapon', s);
 
-  // Assign ATK SPD
+  // ATK SPD lines
   let asLeft = best.gearLines;
-  best.asLines=0;
   for (const s of rules.slots) {
     if (s!=="Weapon" && asLeft>0) {
-      if (canAdd(s,"ATK SPD")) {
-        layout[s].push(statWithValue("ATK SPD",t));
-        best.asLines++;
-        asLeft--;
-      }
+      if (tryAdd(s,"ATK SPD")) asLeft--;
     }
   }
 
-  // Trackers
-  best.critLines=0; best.evaLines=0; best.drLines=0;
-  best.atkLines=0; best.cdLines=0; best.mdLines=0; best.hpLines=0; best.dfLines=0;
-
-  const tryAddLine=(slot,stat)=>{
-    if(!canAdd(slot,stat))return false;
-    layout[slot].push(statWithValue(stat,t));
-    if(stat==="Crit Chance") best.critLines++;
-    if(stat==="Evasion")     best.evaLines++;
-    if(stat==="DR%")         best.drLines++;
-    if(stat==="ATK%")        best.atkLines++;
-    if(stat==="Crit DMG")    best.cdLines++;
-    if(stat==="Monster DMG") best.mdLines++;
-    if(stat==="HP%")         best.hpLines++;
-    if(stat==="DEF%")        best.dfLines++;
-    return true;
-  };
-
-  // First pass caps
+  // First-pass caps
   for (const slot of rules.slots) {
     if (slot==="Weapon") continue;
-    const hasAS=layout[slot].includes("ATK SPD");
-
-    if(focus==="DPS"){
-      if(!hasAS && (best.critLines*t.CR)<rules.caps.critFromGearRune) tryAddLine(slot,"Crit Chance");
-      if(!hasAS && (best.evaLines*t.EV)<rules.caps.evaFromGearRune)   tryAddLine(slot,"Evasion");
-    }else{
-      if((best.drLines*t.DR)<rules.caps.drFromGearRune)               tryAddLine(slot,"DR%");
-      if(!hasAS && (best.evaLines*t.EV)<rules.caps.evaFromGearRune)   tryAddLine(slot,"Evasion");
-      if(!hasAS && (best.critLines*t.CR)<rules.caps.critFromGearRune) tryAddLine(slot,"Crit Chance");
+    if (focus==="DPS") {
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+    } else {
+      if ((best.drLines*t.DR) <= rules.caps.drFromGearRune)     tryAdd(slot,"DR%");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
     }
   }
 
   // Fillers
-  const fillerOrderDPS=["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
-  const fillerOrderTank=["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
-  for(const slot of rules.slots){
-    if(slot==="Weapon")continue;
-    const order=(focus==="DPS")?fillerOrderDPS:fillerOrderTank;
-    for(const stat of order){
-      if(layout[slot].length>=capPerSlot(slot))break;
-      if(CAP_STATS.has(stat)&&slotHasAnyCap(layout[slot]))continue;
-      if(stat==="Crit Chance"&&(best.critLines*t.CR)>=rules.caps.critFromGearRune)continue;
-      if(stat==="Evasion"&&(best.evaLines*t.EV)>=rules.caps.evaFromGearRune)continue;
-      if(stat==="DR%"&&(best.drLines*t.DR)>=rules.caps.drFromGearRune)continue;
-      tryAddLine(slot,stat);
+  const fillerDPS = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
+  const fillerTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
+
+  for (const slot of rules.slots) {
+    if (slot==="Weapon") continue;
+    const order = (focus==="DPS") ? fillerDPS : fillerTank;
+    for (const stat of order) {
+      if (layout[slot].some(st => CAP_STATS.has(st)) && CAP_STATS.has(stat)) continue;
+      if (stat==="Crit Chance" && (best.critLines*t.CR) > rules.caps.critFromGearRune) continue;
+      if (stat==="Evasion" && (best.evaLines*t.EV) > rules.caps.evaFromGearRune) continue;
+      if (stat==="DR%" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
+      tryAdd(slot,stat);
     }
   }
 
   // Render
-  for(const[slot,stats]of Object.entries(layout)){
+  for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
     div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
     box.appendChild(div);
   }
-  best._isChaosAbyss=isChaosAbyss; best._focus=focus;
+
+  best._isChaosAbyss=isChaosAbyss;
+  best._focus=focus;
 }
 
-// ---- totals ----
+// ---------- Totals ----------
 function renderTotals(focus,tier,best){
-  const box=document.getElementById('totals'); box.innerHTML='';
-  const t=best.tierVals; const isChaosAbyss=(tier==="Chaos"||tier==="Abyss");
+  const box=document.getElementById('totals');
+  box.innerHTML='';
 
-  let atkSpd=best.asLines*t.AS+best.rune;
-  let critBase=best.critLines*t.CR+best.rune;
-  let evaBase =best.evaLines*t.EV+best.rune;
-  let dr      =best.drLines*t.DR+best.rune;
-  let atk=best.atkLines*t.ATK, cd=best.cdLines*t.CD, md=best.mdLines*t.MD,
-      hp=best.hpLines*t.HP, df=best.dfLines*t.DF;
+  const t=best.tierVals;
+  const isChaosAbyss=(tier==="Chaos"||tier==="Abyss");
 
-  critBase=Math.min(critBase,rules.caps.critFromGearRune);
-  evaBase =Math.min(evaBase,rules.caps.evaFromGearRune);
-  dr      =Math.min(dr,rules.caps.drFromGearRune);
+  let atkSpd = best.gearLines*t.AS + best.rune*0.01;
 
-  const critBuff=(+els.guildCrit.value||0)/100+(+els.secretCrit.value||0)/100;
-  const evaBuff=(+els.secretEva.value||0)/100;
+  let crit = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
+  let eva  = best.evaLines*t.EV + best.rune*0.01;
+  let dr   = best.drLines*t.DR + best.rune*0.01;
+  if (dr > rules.caps.drFromGearRune) dr = rules.caps.drFromGearRune;
 
-  let crit=critBase+critBuff+(best.critPet||0);
-  let eva =evaBase+evaBuff;
+  const critBuff = (+els.guildCrit.value||0)/100 + (+els.secretCrit.value||0)/100;
+  const evaBuff  = (+els.secretEva.value||0)/100;
 
-  if(isChaosAbyss){
-    atk+=3*t.ATK;
-    cd+=2*t.CD+t.CD;
-    if(best._focus==="Tank") hp+=t.HP;
-    hp+=2*t.HP;
+  crit = Math.min(crit, rules.caps.critFromGearRune + critBuff);
+  eva  = Math.min(eva,  rules.caps.evaFromGearRune  + evaBuff);
+
+  crit += critBuff;
+  eva  += evaBuff;
+
+  let atk = best.atkLines*t.ATK;
+  let cd  = best.cdLines*t.CD;
+  let md  = best.mdLines*t.MD;
+  let hp  = best.hpLines*t.HP;
+  let df  = best.dfLines*t.DF;
+
+  if (isChaosAbyss){
+    atk += 3*t.ATK;
+    cd  += 3*t.CD;
+    if (best._focus==="Tank") hp+=t.HP;
+    hp += 2*t.HP;
   }
 
   box.innerHTML=`
