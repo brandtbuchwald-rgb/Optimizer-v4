@@ -63,22 +63,14 @@ const rules = {
     S:{AS:0.12, CR:0.12}
   },
 
-  /// Weapon stat pools (no AS/CR/EV on weapons)
-// Note: Cast values differ by Chaos/Abyss vs others
+  // Weapon stat pools (no AS/CR/EV on weapons)
+  // Note: Cast values differ by Chaos/Abyss vs others
+  // Weapon stat pools (no AS/CR/EV on weapons)
 weaponPool: {
-  common: ["ATK%", "Crit DMG", "DR%", "HP%", "DEF%", "Monster DMG"],   // ✅ DR% only
+  common: ["ATK%","Crit DMG","DR%","HP%","DEF%","Monster DMG"], // ✅ DR% not "Damage Reduction"
   castDPS: { chaosAbyss: "Cast Demon Lord (19%)", normal: "Cast Demon Lord (17%)" },
   castTank:{ chaosAbyss: "Cast Evasion (19%)",    normal: "Cast Evasion (17%)"    }
 },
-
-// Weapon filler priorities
-const weaponFillPriority = (focus==="DPS")
-  ? ["ATK%", "Crit DMG", "Monster DMG", "HP%", "DEF%", "DR%"]          // ✅ DR% not Damage Reduction
-  : ["HP%", "DEF%", "DR%", "ATK%", "Crit DMG", "Monster DMG"];
-
-// Second-pass filler priorities
-const fillerOrderDPS  = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];  
-const fillerOrderTank = ["Evasion","Crit Chance","DR%","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
