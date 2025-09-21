@@ -255,12 +255,17 @@ for (const slot of rules.slots) {
   }
 }
   // Render
-  for (const [slot,stats] of Object.entries(layout)){
-    const div=document.createElement('div');
-    div.className='slot';
-    div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
-    box.appendChild(div);
-  }
+  for (const [slot, stats] of Object.entries(layout)) {
+  const div = document.createElement('div');
+  div.className = 'slot';
+  div.innerHTML = `<h3>${slot}</h3>` +
+    stats.map(stKey => {
+      // find label by reversing statMap
+      const label = Object.keys(statMap).find(k => statMap[k] === stKey) || stKey;
+      return `<div>- ${renderStat(label, t)}</div>`;
+    }).join('');
+  box.appendChild(div);
+}
 
   best._isChaosAbyss=isChaosAbyss;
   best._focus=focus;
