@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Correct Cap Handling
+// Rediscover Optimizer v4 — Final Cap Fix
 // ==========================
 
 const els = {};
@@ -165,18 +165,15 @@ function renderSlots(cls, focus, tier, best) {
 
   // Only AS/CR/EV are mutually exclusive
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
-  const slotHasCap = arr => arr.some(st => CAP_STATS.has(st));
-
-  const canAdd = (slot, stat) => {
-    if (layout[slot].length >= capPerSlot(slot)) return false;
-    if (layout[slot].includes(stat)) return false;
-    if (CAP_STATS.has(stat) && slotHasCap(layout[slot])) return false;
-    return true;
-  };
 
   const tryAdd = (slot, stat) => {
-    if (!canAdd(slot,stat)) return false;
+    // one cap stat per slot
+    if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) return false;
+    if (layout[slot].length >= capPerSlot(slot)) return false;
+    if (layout[slot].includes(stat)) return false;
+
     layout[slot].push(statWithValue(stat,t));
+
     if (stat==="Crit Chance") best.critLines++;
     if (stat==="Evasion")     best.evaLines++;
     if (stat==="DR%")         best.drLines++;
@@ -185,14 +182,15 @@ function renderSlots(cls, focus, tier, best) {
     if (stat==="Monster DMG") best.mdLines++;
     if (stat==="HP%")         best.hpLines++;
     if (stat==="DEF%")        best.dfLines++;
+    if (stat==="ATK SPD")     best.asLines++;
     return true;
   };
 
   // Purples
   if (isChaosAbyss) {
-    layout['Weapon'].push(focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS) : purple(rules.purple5thLabels.WeaponTank));
+    tryAdd('Weapon', focus==="DPS" ? rules.purple5thLabels.WeaponDPS : rules.purple5thLabels.WeaponTank);
     ["Necklace","Ring","Helm","Belt","Chest","Gloves","Boots"].forEach(s => {
-      layout[s].push(purple(rules.purple5thLabels[s]));
+      tryAdd(s, rules.purple5thLabels[s]);
     });
   }
 
@@ -210,32 +208,21 @@ function renderSlots(cls, focus, tier, best) {
   // ATK SPD lines
   let asLeft = best.gearLines;
   for (const s of rules.slots) {
-    if (s!=="Weapon" && asLeft>0 && canAdd(s,"ATK SPD")) {
-      tryAdd(s,"ATK SPD");
-      asLeft--;
+    if (s!=="Weapon" && asLeft>0) {
+      if (tryAdd(s,"ATK SPD")) asLeft--;
     }
   }
 
-  // First-pass cap assignment
+  // First-pass caps
   for (const slot of rules.slots) {
     if (slot==="Weapon") continue;
     if (focus==="DPS") {
-      if (canAdd(slot,"Crit Chance") && (best.critLines*t.CR) <= rules.caps.critFromGearRune) {
-        tryAdd(slot,"Crit Chance");
-      }
-      if (canAdd(slot,"Evasion") && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune) {
-        tryAdd(slot,"Evasion");
-      }
+      if ((best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
+      if ((best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
     } else {
-      if (canAdd(slot,"DR%") && (best.drLines*t.DR) <= rules.caps.drFromGearRune) {
-        tryAdd(slot,"DR%");
-      }
-      if (canAdd(slot,"Evasion") && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune) {
-        tryAdd(slot,"Evasion");
-      }
-      if (canAdd(slot,"Crit Chance") && (best.critLines*t.CR) <= rules.caps.critFromGearRune) {
-        tryAdd(slot,"Crit Chance");
-      }
+      if ((best.drLines*t.DR) <= rules.caps.drFromGearRune)     tryAdd(slot,"DR%");
+      if ((best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+      if ((best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
     }
   }
 
@@ -247,7 +234,6 @@ function renderSlots(cls, focus, tier, best) {
     if (slot==="Weapon") continue;
     const order = (focus==="DPS") ? fillerDPS : fillerTank;
     for (const stat of order) {
-      if (!canAdd(slot,stat)) continue;
       if (stat==="Crit Chance" && (best.critLines*t.CR) > rules.caps.critFromGearRune) continue;
       if (stat==="Evasion" && (best.evaLines*t.EV) > rules.caps.evaFromGearRune) continue;
       if (stat==="DR%" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
@@ -280,7 +266,7 @@ function renderTotals(focus,tier,best){
   let crit = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
   let eva  = best.evaLines*t.EV + best.rune*0.01;
   let dr   = best.drLines*t.DR + best.rune*0.01;
-  if (dr > rules.caps.drFromGearRune) dr = rules.caps.drFromGearRune; // clamp to 100%
+  if (dr > rules.caps.drFromGearRune) dr = rules.caps.drFromGearRune;
 
   crit += (+els.guildCrit.value||0)/100;
   crit += (+els.secretCrit.value||0)/100;
