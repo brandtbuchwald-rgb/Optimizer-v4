@@ -1,5 +1,5 @@
 // ==========================
-// Rediscover Optimizer v4 — Final Cap Fix
+// Rediscover Optimizer v4 — Exclusive Cap Stats Fixed
 // ==========================
 
 const els = {};
@@ -114,7 +114,7 @@ function run(){
           if (!best || gearLines < best.gearLines || (gearLines === best.gearLines && waste < best.waste)){
             best = {gearLines, rune, quick:0, petName, petAS, critPet:petCR,
               totalAS, finalInterval, waste, tierVals,
-              critLines:0, evaLines:0, drLines:0, atkLines:0, cdLines:0, mdLines:0, hpLines:0, dfLines:0};
+              critLines:0, evaLines:0, drLines:0, atkLines:0, cdLines:0, mdLines:0, hpLines:0, dfLines:0, asLines:0};
           }
         }
       }
@@ -167,7 +167,6 @@ function renderSlots(cls, focus, tier, best) {
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
 
   const tryAdd = (slot, stat) => {
-    // one cap stat per slot
     if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) return false;
     if (layout[slot].length >= capPerSlot(slot)) return false;
     if (layout[slot].includes(stat)) return false;
