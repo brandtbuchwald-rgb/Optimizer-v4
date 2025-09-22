@@ -1,5 +1,5 @@
-/// ==========================
-// Rediscover Optimizer v4 — Debug Build (Exclusivity Fix)
+// ==========================
+// Rediscover Optimizer v4 — Stable Build
 // ==========================
 
 const els = {};
@@ -68,15 +68,12 @@ const rules = {
 const fmtPct = p => (p*100).toFixed(1) + '%';
 const fmtSec = s => s.toFixed(3) + 's';
 
-// Map of labels to shorthand keys
-const statMap = {
-  "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP",
-  "DEF%":"DF","DR%":"DR","Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
-};
-
-// Render-only function
-function renderStat(label, t) {
-  const key = statMap[label];
+function statWithValue(label, t) {
+  const map = {
+    "ATK%":"ATK","Crit DMG":"CD","Monster DMG":"MD","HP%":"HP",
+    "DEF%":"DF","DR%":"DR","Evasion":"EV","Crit Chance":"CR","ATK SPD":"AS"
+  };
+  const key = map[label];
   const val = t[key];
   return (typeof val === "number") ? `${label} +${(val*100).toFixed(0)}%` : label;
 }
@@ -154,7 +151,6 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots ----------
-// ---------- Slots ----------
 function renderSlots(cls, focus, tier, weap, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -193,7 +189,7 @@ function renderSlots(cls, focus, tier, weap, best) {
     return true;
   };
 
-  // 🔹 Always place purple lines first (Chaos/Abyss only, not PvP)
+  // Purple stats first for Chaos/Abyss (not PvP)
   if (isChaosAbyss && !isPvP) {
     layout['Weapon'].unshift(
       focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS)
@@ -230,14 +226,14 @@ function renderSlots(cls, focus, tier, weap, best) {
     if (focus==="DPS") {
       if (!layout[slot].some(st => CAP_STATS.has(st))) {
         const projected = best.critLines*t.CR;
-        if (projected + t.CR <= rules.caps.critFromGearRune + 0.0001 ||
+        if (projected + t.CR <= rules.caps.critFromGearRune ||
             (rules.caps.critFromGearRune - projected) > 0.06) {
           tryAdd(slot,"Crit Chance");
         }
       }
       if (!layout[slot].some(st => CAP_STATS.has(st))) {
         const projected = best.evaLines*t.EV;
-        if (projected + t.EV <= rules.caps.evaFromGearRune + 0.0001 ||
+        if (projected + t.EV <= rules.caps.evaFromGearRune ||
             (rules.caps.evaFromGearRune - projected) > 0.06) {
           tryAdd(slot,"Evasion");
         }
@@ -246,14 +242,14 @@ function renderSlots(cls, focus, tier, weap, best) {
       if ((best.drLines*t.DR) <= rules.caps.drFromGearRune) tryAdd(slot,"DR%");
       if (!layout[slot].some(st => CAP_STATS.has(st))) {
         const projected = best.evaLines*t.EV;
-        if (projected + t.EV <= rules.caps.evaFromGearRune + 0.0001 ||
+        if (projected + t.EV <= rules.caps.evaFromGearRune ||
             (rules.caps.evaFromGearRune - projected) > 0.06) {
           tryAdd(slot,"Evasion");
         }
       }
       if (!layout[slot].some(st => CAP_STATS.has(st))) {
         const projected = best.critLines*t.CR;
-        if (projected + t.CR <= rules.caps.critFromGearRune + 0.0001 ||
+        if (projected + t.CR <= rules.caps.critFromGearRune ||
             (rules.caps.critFromGearRune - projected) > 0.06) {
           tryAdd(slot,"Crit Chance");
         }
@@ -270,14 +266,8 @@ function renderSlots(cls, focus, tier, weap, best) {
     const order = (focus==="DPS") ? fillerDPS : fillerTank;
     for (const stat of order) {
       if (layout[slot].some(st => CAP_STATS.has(st)) && CAP_STATS.has(stat)) continue;
-      if (stat==="Crit Chance") {
-        const projected = best.critLines*t.CR;
-        if (projected >= rules.caps.critFromGearRune) continue;
-      }
-      if (stat==="Evasion") {
-        const projected = best.evaLines*t.EV;
-        if (projected >= rules.caps.evaFromGearRune) continue;
-      }
+      if (stat==="Crit Chance" && (best.critLines*t.CR) >= rules.caps.critFromGearRune) continue;
+      if (stat==="Evasion" && (best.evaLines*t.EV) >= rules.caps.evaFromGearRune) continue;
       if (stat==="DR%" && (best.drLines*t.DR) >= rules.caps.drFromGearRune) continue;
       tryAdd(slot,stat);
     }
@@ -304,10 +294,9 @@ function renderTotals(focus,tier,best){
   const isChaosAbyss=(tier==="Chaos"||tier==="Abyss");
 
   let atkSpd = best.gearLines*t.AS + best.rune*0.01;
-
-  let crit = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
-  let eva  = best.evaLines*t.EV + best.rune*0.01;
-  let dr   = best.drLines*t.DR + best.rune*0.01;
+  let crit   = best.critLines*t.CR + best.rune*0.01 + (best.critPet||0);
+  let eva    = best.evaLines*t.EV + best.rune*0.01;
+  let dr     = best.drLines*t.DR + best.rune*0.01;
   if (dr > rules.caps.drFromGearRune) dr = rules.caps.drFromGearRune;
 
   const critBuff = (+els.guildCrit.value||0)/100 + (+els.secretCrit.value||0)/100;
