@@ -154,6 +154,7 @@ function renderCombo(cls,focus,weap,tier,base,target,best){
 }
 
 // ---------- Slots ----------
+// ---------- Slots ----------
 function renderSlots(cls, focus, tier, weap, best) {
   const box = document.getElementById('slots');
   box.innerHTML = '';
@@ -171,35 +172,35 @@ function renderSlots(cls, focus, tier, weap, best) {
     return 4; // Original + PvP/Boss
   };
 
-  const CAP_STATS = new Set(["CR","EV","AS"]);
+  const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
 
   const tryAdd = (slot, stat) => {
-    const key = statMap[stat] || stat;
-    if (CAP_STATS.has(key) && layout[slot].some(st => CAP_STATS.has(st))) return false;
+    if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) return false;
     if (layout[slot].length >= capPerSlot(slot)) return false;
-    if (layout[slot].includes(key)) return false;
+    if (layout[slot].includes(stat)) return false;
 
-    layout[slot].push(key);
+    layout[slot].push(statWithValue(stat,t));
 
-    if (key==="CR") best.critLines++;
-    if (key==="EV") best.evaLines++;
-    if (key==="DR") best.drLines++;
-    if (key==="ATK") best.atkLines++;
-    if (key==="CD") best.cdLines++;
-    if (key==="MD") best.mdLines++;
-    if (key==="HP") best.hpLines++;
-    if (key==="DF") best.dfLines++;
-    if (key==="AS") best.asLines++;
+    if (stat==="Crit Chance") best.critLines++;
+    if (stat==="Evasion")     best.evaLines++;
+    if (stat==="DR%")         best.drLines++;
+    if (stat==="ATK%")        best.atkLines++;
+    if (stat==="Crit DMG")    best.cdLines++;
+    if (stat==="Monster DMG") best.mdLines++;
+    if (stat==="HP%")         best.hpLines++;
+    if (stat==="DEF%")        best.dfLines++;
+    if (stat==="ATK SPD")     best.asLines++;
     return true;
   };
 
-  // Purples only for Chaos/Abyss (not PvP/Boss)
+  // 🔹 Always place purple lines first (Chaos/Abyss only, not PvP)
   if (isChaosAbyss && !isPvP) {
-    layout['Weapon'].push(
-      focus==="DPS" ? "Crit DMG" : "HP%"
+    layout['Weapon'].unshift(
+      focus==="DPS" ? purple(rules.purple5thLabels.WeaponDPS)
+                    : purple(rules.purple5thLabels.WeaponTank)
     );
     ["Necklace","Ring","Helm","Belt","Chest","Gloves","Boots"].forEach(s => {
-      layout[s].push(rules.purple5thLabels[s]);
+      layout[s].unshift(purple(rules.purple5thLabels[s]));
     });
   }
 
@@ -222,16 +223,41 @@ function renderSlots(cls, focus, tier, weap, best) {
     }
   }
 
-  // First-pass caps
+  // First-pass caps with smarter rune margin
   for (const slot of rules.slots) {
     if (slot==="Weapon") continue;
+
     if (focus==="DPS") {
-      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
-      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
+      if (!layout[slot].some(st => CAP_STATS.has(st))) {
+        const projected = best.critLines*t.CR;
+        if (projected + t.CR <= rules.caps.critFromGearRune + 0.0001 ||
+            (rules.caps.critFromGearRune - projected) > 0.06) {
+          tryAdd(slot,"Crit Chance");
+        }
+      }
+      if (!layout[slot].some(st => CAP_STATS.has(st))) {
+        const projected = best.evaLines*t.EV;
+        if (projected + t.EV <= rules.caps.evaFromGearRune + 0.0001 ||
+            (rules.caps.evaFromGearRune - projected) > 0.06) {
+          tryAdd(slot,"Evasion");
+        }
+      }
     } else {
-      if ((best.drLines*t.DR) <= rules.caps.drFromGearRune)     tryAdd(slot,"DR%");
-      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.evaLines*t.EV) <= rules.caps.evaFromGearRune)   tryAdd(slot,"Evasion");
-      if (!layout[slot].some(st => CAP_STATS.has(st)) && (best.critLines*t.CR) <= rules.caps.critFromGearRune) tryAdd(slot,"Crit Chance");
+      if ((best.drLines*t.DR) <= rules.caps.drFromGearRune) tryAdd(slot,"DR%");
+      if (!layout[slot].some(st => CAP_STATS.has(st))) {
+        const projected = best.evaLines*t.EV;
+        if (projected + t.EV <= rules.caps.evaFromGearRune + 0.0001 ||
+            (rules.caps.evaFromGearRune - projected) > 0.06) {
+          tryAdd(slot,"Evasion");
+        }
+      }
+      if (!layout[slot].some(st => CAP_STATS.has(st))) {
+        const projected = best.critLines*t.CR;
+        if (projected + t.CR <= rules.caps.critFromGearRune + 0.0001 ||
+            (rules.caps.critFromGearRune - projected) > 0.06) {
+          tryAdd(slot,"Crit Chance");
+        }
+      }
     }
   }
 
@@ -243,11 +269,16 @@ function renderSlots(cls, focus, tier, weap, best) {
     if (slot==="Weapon") continue;
     const order = (focus==="DPS") ? fillerDPS : fillerTank;
     for (const stat of order) {
-      const key = statMap[stat] || stat;
-      if (layout[slot].some(st => CAP_STATS.has(st)) && CAP_STATS.has(key)) continue;
-      if (key==="CR" && (best.critLines*t.CR) > rules.caps.critFromGearRune) continue;
-      if (key==="EV" && (best.evaLines*t.EV) > rules.caps.evaFromGearRune) continue;
-      if (key==="DR" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
+      if (layout[slot].some(st => CAP_STATS.has(st)) && CAP_STATS.has(stat)) continue;
+      if (stat==="Crit Chance") {
+        const projected = best.critLines*t.CR;
+        if (projected >= rules.caps.critFromGearRune) continue;
+      }
+      if (stat==="Evasion") {
+        const projected = best.evaLines*t.EV;
+        if (projected >= rules.caps.evaFromGearRune) continue;
+      }
+      if (stat==="DR%" && (best.drLines*t.DR) >= rules.caps.drFromGearRune) continue;
       tryAdd(slot,stat);
     }
   }
@@ -256,10 +287,7 @@ function renderSlots(cls, focus, tier, weap, best) {
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
     div.className='slot';
-    div.innerHTML=`<h3>${slot}</h3>`+stats.map(stKey => {
-      const label = Object.keys(statMap).find(k => statMap[k] === stKey) || stKey;
-      return `<div>- ${renderStat(label, t)}</div>`;
-    }).join('');
+    div.innerHTML=`<h3>${slot}</h3>`+stats.map(s=>`<div>- ${s}</div>`).join('');
     box.appendChild(div);
   }
 
