@@ -180,25 +180,32 @@ function renderSlots(cls, focus, tier, weap, best) {
 
   const CAP_STATS = new Set(["ATK SPD","Crit Chance","Evasion"]);
 
-  const tryAdd = (slot, stat) => {
-    // Prevent multiple capped stats (AS/CR/EV) on the same slot
-    if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) return false;
-    if (layout[slot].length >= capPerSlot(slot)) return false;
-    if (layout[slot].includes(stat)) return false;
+const tryAdd = (slot, stat) => {
+  // If slot already has a cap stat, reject adding another
+  if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) {
+    return false;
+  }
 
-    layout[slot].push(statWithValue(stat,t));
+  // If slot already full, reject
+  if (layout[slot].length >= capPerSlot(slot)) return false;
 
-    if (stat==="Crit Chance") best.critLines++;
-    if (stat==="Evasion")     best.evaLines++;
-    if (stat==="DR%")         best.drLines++;
-    if (stat==="ATK%")        best.atkLines++;
-    if (stat==="Crit DMG")    best.cdLines++;
-    if (stat==="Monster DMG") best.mdLines++;
-    if (stat==="HP%")         best.hpLines++;
-    if (stat==="DEF%")        best.dfLines++;
-    if (stat==="ATK SPD")     best.asLines++;
-    return true;
-  };
+  // If stat already exists in this slot, reject
+  if (layout[slot].some(st => st.includes(stat))) return false;
+
+  layout[slot].push(statWithValue(stat,t));
+
+  if (stat==="Crit Chance") best.critLines++;
+  if (stat==="Evasion")     best.evaLines++;
+  if (stat==="DR%")         best.drLines++;
+  if (stat==="ATK%")        best.atkLines++;
+  if (stat==="Crit DMG")    best.cdLines++;
+  if (stat==="Monster DMG") best.mdLines++;
+  if (stat==="HP%")         best.hpLines++;
+  if (stat==="DEF%")        best.dfLines++;
+  if (stat==="ATK SPD")     best.asLines++;
+
+  return true;
+};
 
   // 🔹 Purple stats always first (Chaos/Abyss only, not PvP/Boss)
   if (isChaosAbyss && !isPvP) {
@@ -243,22 +250,30 @@ function renderSlots(cls, focus, tier, weap, best) {
   }
 
   // Fillers
-  const fillerDPS = ["Crit Chance","Evasion","ATK%","Crit DMG","Monster DMG","HP%","DEF%","DR%"];
-  const fillerTank = ["DR%","Evasion","Crit Chance","HP%","DEF%","ATK%","Crit DMG","Monster DMG"];
+  // ---- Cap Headroom ----
+const critHeadroom = rules.caps.critFromGearRune - (best.critLines * t.CR);
+const evaHeadroom  = rules.caps.evaFromGearRune  - (best.evaLines  * t.EV);
 
-  for (const slot of rules.slots) {
-    if (slot==="Weapon") continue;
-    const order = (focus==="DPS") ? fillerDPS : fillerTank;
-    for (const stat of order) {
-      // skip if already holding a capped stat
-      if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) continue;
-      if (stat==="Crit Chance" && (best.critLines*t.CR) > rules.caps.critFromGearRune) continue;
-      if (stat==="Evasion" && (best.evaLines*t.EV) > rules.caps.evaFromGearRune) continue;
-      if (stat==="DR%" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
-      tryAdd(slot,stat);
-    }
+// ---- Fillers ----
+for (const slot of rules.slots) {
+  if (slot==="Weapon") continue;
+  const order = (focus==="DPS") ? fillerDPS : fillerTank;
+
+  for (const stat of order) {
+    if (CAP_STATS.has(stat) && layout[slot].some(st => CAP_STATS.has(st))) continue;
+
+    // Crit filler only if gear contribution is still needed
+    if (stat==="Crit Chance" && critHeadroom <= 0) continue;
+
+    // Eva filler only if gear contribution is still needed
+    if (stat==="Evasion" && evaHeadroom <= 0) continue;
+
+    // DR still capped normally
+    if (stat==="DR%" && (best.drLines*t.DR) > rules.caps.drFromGearRune) continue;
+
+    tryAdd(slot,stat);
   }
-
+}
   // Render slots
   for (const [slot,stats] of Object.entries(layout)){
     const div=document.createElement('div');
